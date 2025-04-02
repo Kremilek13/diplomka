@@ -164,3 +164,4 @@ cython_debug/
 # příliš velké soubory :D
 /output
 /datasources
+*.pkl
