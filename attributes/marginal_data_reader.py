@@ -18,18 +18,19 @@ def read_marginal_data(columns: List[str], attribute_name: str) -> pd.DataFrame:
 
     """
     margins_path = os.path.join(os.path.dirname(__file__),
-                                '../datasources/marginal/marginal_distributions_84583NED.csv')
+                                '../datasources/marginal/marginal_casti_brna.csv')
     df_marginal = pd.read_csv(margins_path, sep=";")
     column_names = [original for original, renamed in marginal_data_code_map.items() if renamed in columns]
-    if 'Codering_3' not in column_names:
-        column_names.append('Codering_3')
+    if 'Kód městské části' not in column_names:
+        column_names.append('Kód městské části')
     df_marginal = df_marginal[column_names]
     df_marginal = df_marginal.rename(columns=marginal_data_code_map)
-    df_marginal = df_marginal[df_marginal.neighb_code.isin(neighborhood_codes)]
+    df_marginal = df_marginal[df_marginal.kód.isin(neighborhood_codes)]
+    print(df_marginal)
     if len(columns) > 1:
         return multicolumn_to_attribute_values(df_marginal, attribute_name, columns)
     else:
-        return df_marginal.set_index('neighb_code')
+        return df_marginal.set_index('kód')
 
 
 def read_province_population_size():
@@ -66,11 +67,8 @@ def read_province_population_size():
 
 # These are the neighborhoods that we want to include
 neighborhood_codes = pd.Series(
-        ["BU05181785", "BU05183284", "BU05183387", "BU05183396", "BU05183398", "BU05183399", "BU05183480", "BU05183488",
-         "BU05183489", "BU05183536", "BU05183620", "BU05183637", "BU05183638", "BU05183639"], name="neighb_code")
-# (["6201", "6202", "6203", "6204", "6205", "6206", "6207", "6208", 
-#                                "6209", "6210", "6211", "6212", "6213", "6214", "6215", "6216", "6217", "6218", "6219", 
-#                                "6220", "6221"], name="neighb_code")
+        [582786, 551082, 551325, 551198, 551066, 551317, 551376, 551406, 551074, 551171, 551210, 551147, 551228, 551007, 551287, 551252, 551236, 551112, 551422, 551244, 551031, 551295, 551091, 550973, 551309, 551431, 551279, 550990, 551368, 551058
+        ], name="kód")
 
 
 
@@ -80,15 +78,15 @@ age_groups = ['0-15', '15-25', '25-45', '45-65', '65+']
 # Defines how the column names used by CBS map to more convenient names we can use later.
 # May have to be extended if more marginal attributes are used
 marginal_data_code_map = {
-    'Codering_3': 'neighb_code',
-    'AantalInwoners_5': 'population',
-    'Mannen_6': 'male',
-    'Vrouwen_7': 'female',
-    'k_0Tot15Jaar_8': '0-15',
-    'k_15Tot25Jaar_9': '15-25',
-    'k_25Tot45Jaar_10': '25-45',
-    'k_45Tot65Jaar_11': '45-65',
-    'k_65JaarOfOuder_12': '65+',
+    'Kód městské části': 'kód',
+    'celkem': 'populace',
+    'muži': 'muži',
+    'ženy': 'ženy',
+    # 'k_0Tot15Jaar_8': '0-15',
+    # 'k_15Tot25Jaar_9': '15-25',
+    # 'k_25Tot45Jaar_10': '25-45',
+    # 'k_45Tot65Jaar_11': '45-65',
+    # 'k_65JaarOfOuder_12': '65+',
     # 'Ongehuwd_13': 'unmarried',
     # 'Gehuwd_14': 'maried',
     # 'WestersTotaal_17': 'Western',

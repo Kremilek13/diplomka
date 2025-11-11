@@ -38,7 +38,7 @@ def instantiate_population(_=None) -> pd.DataFrame:
     agent_ids = list()
     agent_neighborhoods = list()
     agent_count = 0
-    for neighb_code, (neighb_total) in read_marginal_data(['population'], 'population').iterrows():
+    for neighb_code, (neighb_total) in read_marginal_data(['populace'], 'populace').iterrows():
         agent_ids += [f"SA{i + agent_count:06d}" for i in range(neighb_total.iloc[0])]
         agent_neighborhoods += [neighb_code] * neighb_total.iloc[0]
         agent_count += neighb_total.iloc[0]
