@@ -10,7 +10,7 @@ from gensynthpop.evaluation.validation import validate_fitted_distribution
 from gensynthpop.utils.extractors import synthetic_population_to_contingency
 
 
-def get_household_position_joint_age_gender() -> pd.DataFrame():
+def get_household_position_joint_age_gender() -> pd.DataFrame:
     df = read_household_data('gender', 'age_group', 'child', 'single', 'non_married_no_children',
                              'married_no_children', 'non_married_with_children', 'married_with_children',
                              'single_parent')
@@ -157,7 +157,7 @@ def read_households_margins():
     return df_households
 
 
-def fit_household_position_joint_age_gender(df_synth_pop: pd.DataFrame) -> pd.DataFrame():
+def fit_household_position_joint_age_gender(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     df = pd.read_pickle(os.path.join(
             os.path.dirname(__file__), 'processed/df_households_with_position_and_children.pkl'))
     df = df.rename(columns={"age_group": "small_age_group"}).astype({"count": float})
