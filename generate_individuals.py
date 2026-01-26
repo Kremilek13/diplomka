@@ -38,7 +38,7 @@ def instantiate_population(_=None) -> pd.DataFrame:
     agent_ids = list()
     agent_neighborhoods = list()
     agent_count = 0
-    for neighb_code, (neighb_total) in read_marginal_data(['populace'], 'populace').iterrows():
+    for neighb_code, (neighb_total) in read_marginal_data(['population'], 'population').iterrows():
         agent_ids += [f"SA{i + agent_count:06d}" for i in range(neighb_total.iloc[0])]
         agent_neighborhoods += [neighb_code] * neighb_total.iloc[0]
         agent_count += neighb_total.iloc[0]
@@ -48,6 +48,8 @@ def instantiate_population(_=None) -> pd.DataFrame:
 def add_age_group(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     print("Adding age group")
     df_age_group = read_marginal_data(age_groups, 'age_group')
+    print(df_age_group)
+    print(df_synth_pop)
     df = ConditionalAttributeAdder(
             df_synthetic_population=df_synth_pop,
             df_contingency=df_age_group,
@@ -389,7 +391,17 @@ def perform_stage(version: int, action: Callable[[Optional[pd.DataFrame]], pd.Da
     return df
 
 
+def delete_previous_results():
+    output_folder = 'output/synthetic_population/individuals/'    
+    for file in os.listdir(output_folder):
+        if file.startswith("synth_pop_DHWZ_v"):
+                os.remove(os.path.join(output_folder, file))
+    print(f"Deleted previous results in {output_folder}")
+
+
 if __name__ == "__main__":
+    delete_previous_results()
+
     df_synth_pop_iteration = perform_stage(1, instantiate_population)
 
     stages = [

@@ -2,3 +2,8 @@ byl předpřipravený template https://csu.gov.cz/docs/107508/955929aa-2d9d-91cc
 vykopírovány údaje o populaci (celkem, muži, ženy) + záhlaví z https://vdb.czso.cz/vdbvo2/faces/cs/index.jsf?page=vystup-objekt&z=T&f=TABULKA&skupId=4429&katalog=33515&pvo=SLD21001-MC-OB&pvo=SLD21001-MC-OB&pvokc=43&pvoch=582786#w=
 jak určit věkové skupiny, migrační pozadí (národnost, občanství), ???
 zajistila jsem správné fungování marginal_data_reader
+
+věkové skupiny zůstavají, jenom je eliminován překryv
+věk 100+ je agregován jenom do 100, nijak více není rozepsaný
+
+doplněna úprava do základního skriptu generate_individua.py pro mazání předchozích výsledků
