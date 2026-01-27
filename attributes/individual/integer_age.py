@@ -18,14 +18,15 @@ def read_df_integer_age() -> pd.DataFrame:
 
     data_file = os.path.join(
             os.path.dirname(__file__),
-            '../../datasources/individual/integer_age/Leeftijdsopbouw Nederland 2019.csv',
+            '../../datasources/individual/gender/pohlavi_vek.csv',
     )
-    df_integer_age = pd.read_csv(data_file, sep=";")
-    df_integer_age.loc[0, "Leeftijd"] = "105 jaar"
-    df_integer_age["Leeftijd"] = df_integer_age.Leeftijd.transform(lambda x: int(x.replace(" jaar", "")))
-    df_integer_age.rename(columns={"Mannen": "male", "Vrouwen": "female", "Leeftijd": "age"}, inplace=True)
-    df_integer_age["male"] = df_integer_age.male.transform(lambda x: int(x.replace(" ", "")))
-    df_integer_age["female"] = df_integer_age.female.transform(lambda x: int(x.replace(" ", "")))
+    df_integer_age = pd.read_csv(data_file, sep=",")
+    df_integer_age = df_integer_age.rename(columns={"vek": "age", "pocet_muzu":"male", "pocet_zen":"female"})
+    df_integer_age.loc[0, "age"] = 0
+#     df_integer_age["Leeftijd"] = df_integer_age.Leeftijd.transform(lambda x: int(x.replace(" jaar", "")))
+#     df_integer_age.rename(columns={"Mannen": "male", "Vrouwen": "female", "Leeftijd": "age"}, inplace=True)
+#     df_integer_age["male"] = df_integer_age.male.transform(lambda x: int(x.replace(" ", "")))
+#     df_integer_age["female"] = df_integer_age.female.transform(lambda x: int(x.replace(" ", "")))
     df_integer_age = df_integer_age.melt(id_vars="age", value_vars=["male", "female"], var_name="gender",
                                          value_name="count")
     df_integer_age["age_group"] = df_integer_age.age.transform(lambda age: age_to_age_group(age, age_groups))

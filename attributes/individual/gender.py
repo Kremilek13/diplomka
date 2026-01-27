@@ -5,7 +5,20 @@ from ipfn import ipfn
 
 from attributes.marginal_data_reader import age_groups, read_marginal_data
 from gensynthpop.evaluation.validation import validate_fitted_distribution
+from gensynthpop.utils.extractors import age_to_age_group
 
+def create_age_group(vek):
+    if vek < 15:
+        return "0-14"
+    elif vek < 25:
+        return "15-24"
+    elif vek < 45:
+        return "25-44"
+    elif vek < 65:
+        return "45-64"
+    else:
+        return "64+"
+ 
 
 def _read_joint_age_gender() -> pd.DataFrame:
     """
@@ -14,7 +27,7 @@ def _read_joint_age_gender() -> pd.DataFrame:
     To give the existing synthetic population a chance, we will use the formatted data prepared in R for this region,
     instead of going back to the source entirely.
 
-    = age (věk), male (počet mužů), female (počet žen), total (počet mužů + počet žen), age_group (definované věkové skupiny), group_propensity (podíl total / celkový počet lidí ve věkové skupině)
+    = age, male, female, total, age_group, group_propensity (podíl total / celkový počet lidí ve věkové skupině) - není nutný
     celé je to za region (Hague)
 
     Věk, věková skupina, pohlaví
@@ -24,13 +37,17 @@ def _read_joint_age_gender() -> pd.DataFrame:
     """
     data_path = os.path.join(
             os.path.dirname(__file__),
-            '../../datasources/individual/gender/gender_age-03759NED-formatted.csv'
+            '../../datasources/individual/gender/pohlavi_vek.csv'
     )
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(data_path, sep=",")
+    df = df.rename(columns={"vek": "age", "pocet_muzu":"male", "pocet_zen":"female"})
+    df["age_group"] = df.age.transform(lambda age: age_to_age_group(age, age_groups))
+	# df['age_group'] = df['age'].apply(create_age_group)
     df = pd.melt(df, id_vars=["age_group"], value_vars=["male", "female"], var_name="gender", value_name="count")
-    df.age_group = df.age_group.transform(
-            lambda x: "65+" if x == "age_over65" else x.replace("age_", "").replace("_", "-")
-    )
+    print(df)
+    # df.age_group = df.age_group.transform(
+    #         lambda x: "64+" if x == "age_over64" else x.replace("age_", "").replace("_", "-")
+    # )
     df = df.groupby(['age_group', 'gender']).sum()
 
     return df

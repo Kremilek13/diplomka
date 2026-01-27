@@ -6,4 +6,6 @@ zajistila jsem správné fungování marginal_data_reader
 věkové skupiny zůstavají, jenom je eliminován překryv
 věk 100+ je agregován jenom do 100, nijak více není rozepsaný
 
+26.1.2026
 doplněna úprava do základního skriptu generate_individua.py pro mazání předchozích výsledků
+konečně mám data, takže můžu ladit, podařilo se mi zprovoznit marginální údaje, age group a gender

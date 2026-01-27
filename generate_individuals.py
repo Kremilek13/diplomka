@@ -49,7 +49,6 @@ def add_age_group(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     print("Adding age group")
     df_age_group = read_marginal_data(age_groups, 'age_group')
     print(df_age_group)
-    print(df_synth_pop)
     df = ConditionalAttributeAdder(
             df_synthetic_population=df_synth_pop,
             df_contingency=df_age_group,
@@ -77,8 +76,11 @@ def add_gender_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     """
     print("Adding gender conditioned on age group")
     df_contingency = fit_joint_age_gender()
+    print(df_contingency)
     df_margins_age_group = read_marginal_data(age_groups, 'age_group')
+    print(df_margins_age_group)
     df_margins_gender = read_marginal_data(['male', 'female'], 'gender')
+    print(df_margins_gender)
 
     df = ConditionalAttributeAdder(
             df_synthetic_population=df_synth_pop,
@@ -400,7 +402,7 @@ def delete_previous_results():
 
 
 if __name__ == "__main__":
-    delete_previous_results()
+    # delete_previous_results()
 
     df_synth_pop_iteration = perform_stage(1, instantiate_population)
 
@@ -410,6 +412,7 @@ if __name__ == "__main__":
         add_integer_age_conditionally,
         # add_migration_background,
         # add_absolved_education,
+        add_absolved_education_cz
         # add_current_education,
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,

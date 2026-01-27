@@ -18,19 +18,19 @@ def read_marginal_data(columns: List[str], attribute_name: str) -> pd.DataFrame:
 
     """
     margins_path = os.path.join(os.path.dirname(__file__),
-                                '../datasources/marginal/marginal_casti_brna.csv')
+                                '../datasources/marginal/mc_brno_oby.csv')
     df_marginal = pd.read_csv(margins_path, sep=";")
     column_names = [original for original, renamed in marginal_data_code_map.items() if renamed in columns]
-    if 'Kód městské části' not in column_names:
-        column_names.append('Kód městské části')
+    if 'mc' not in column_names:
+        column_names.append('mc')
     df_marginal = df_marginal[column_names]
     df_marginal = df_marginal.rename(columns=marginal_data_code_map)
-    df_marginal = df_marginal[df_marginal.kód.isin(neighborhood_codes)]
+    # df_marginal = df_marginal[df_marginal.neighb_code.isin(neighborhood_codes)]
     print(df_marginal)
     if len(columns) > 1:
         return multicolumn_to_attribute_values(df_marginal, attribute_name, columns)
     else:
-        return df_marginal.set_index('kód')
+        return df_marginal.set_index('neighb_code')
 
 
 def read_province_population_size():
@@ -67,26 +67,26 @@ def read_province_population_size():
 
 # These are the neighborhoods that we want to include
 neighborhood_codes = pd.Series(
-        [582786, 551082, 551325, 551198, 551066, 551317, 551376, 551406, 551074, 551171, 551210, 551147, 551228, 551007, 551287, 551252, 551236, 551112, 551422, 551244, 551031, 551295, 551091, 550973, 551309, 551431, 551279, 550990, 551368, 551058
+        [551082, 551325, 551198, 551066, 551317, 551376, 551406, 551074, 551171, 551210, 551147, 551228, 551007, 551287, 551252, 551236, 551112, 551422, 551244, 551031, 551295, 551091, 550973, 551309, 551431, 551279, 550990, 551368, 551058
         ], name="kód")
 
 
 
 
-age_groups = ['0-15', '15-25', '25-45', '45-65', '65+']
+age_groups = ['0-14', '15-24', '25-44', '45-64', '64+']
 
 # Defines how the column names used by CBS map to more convenient names we can use later.
 # May have to be extended if more marginal attributes are used
 marginal_data_code_map = {
-    'Kód městské části': 'kód',
-    'celkem': 'populace',
-    'muži': 'muži',
-    'ženy': 'ženy',
-    # 'k_0Tot15Jaar_8': '0-15',
-    # 'k_15Tot25Jaar_9': '15-25',
-    # 'k_25Tot45Jaar_10': '25-45',
-    # 'k_45Tot65Jaar_11': '45-65',
-    # 'k_65JaarOfOuder_12': '65+',
+    'mc': 'neighb_code',
+    'pocet_oby': 'population',
+    'muzi': 'male',
+    'zeny': 'female',
+    'oby_0_14': '0-14',
+    'oby_15_24': '15-24',
+    'oby_25_44': '25-44',
+    'oby_45_64': '45-64',
+    'oby_65avice': '64+',
     # 'Ongehuwd_13': 'unmarried',
     # 'Gehuwd_14': 'maried',
     # 'WestersTotaal_17': 'Western',
