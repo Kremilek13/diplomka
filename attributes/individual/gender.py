@@ -7,19 +7,6 @@ from attributes.marginal_data_reader import age_groups, read_marginal_data
 from gensynthpop.evaluation.validation import validate_fitted_distribution
 from gensynthpop.utils.extractors import age_to_age_group
 
-def create_age_group(vek):
-    if vek < 15:
-        return "0-14"
-    elif vek < 25:
-        return "15-24"
-    elif vek < 45:
-        return "25-44"
-    elif vek < 65:
-        return "45-64"
-    else:
-        return "64+"
- 
-
 def _read_joint_age_gender() -> pd.DataFrame:
     """
     Reads the joint distribution of gender and age group.
@@ -42,7 +29,6 @@ def _read_joint_age_gender() -> pd.DataFrame:
     df = pd.read_csv(data_path, sep=",")
     df = df.rename(columns={"vek": "age", "pocet_muzu":"male", "pocet_zen":"female"})
     df["age_group"] = df.age.transform(lambda age: age_to_age_group(age, age_groups))
-	# df['age_group'] = df['age'].apply(create_age_group)
     df = pd.melt(df, id_vars=["age_group"], value_vars=["male", "female"], var_name="gender", value_name="count")
     print(df)
     # df.age_group = df.age_group.transform(

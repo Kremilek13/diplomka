@@ -24,7 +24,7 @@ from gensynthpop.evaluation.validation import validate_synthetic_population_fit
 from gensynthpop.utils.extractors import (get_margin_frames_from_synthetic_population,
                                           synthetic_population_to_contingency)
 from reporting.reporting import score_synthetic_population
-
+from attributes.individual.education_cz import fit_edu
 
 def instantiate_population(_=None) -> pd.DataFrame:
     """
@@ -399,6 +399,37 @@ def delete_previous_results():
         if file.startswith("synth_pop_DHWZ_v"):
                 os.remove(os.path.join(output_folder, file))
     print(f"Deleted previous results in {output_folder}")
+    
+    
+def add_absolved_education_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds education conditioned on age group and gender.
+    Age group and gender have already been added to the synthetic population.
+
+
+    Args:
+        df_synth_pop:
+
+    Returns:
+
+    """
+    print("Adding education conditioned on age group and gender")
+    df_contingency = fit_edu()
+
+    df = ConditionalAttributeAdder(
+            df_synth_pop,
+            df_contingency,
+            "education",
+            ["neighb_code"]
+    ).add_margins(
+            [read_marginal_data(age_groups, "age_group"), read_marginal_data(["male", "female"], "gender")],
+            [["age_group"], ["gender"]]
+    ).run()
+    
+    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "education"], "education")
+
+    return df
+
 
 
 if __name__ == "__main__":
@@ -412,7 +443,7 @@ if __name__ == "__main__":
         add_integer_age_conditionally,
         # add_migration_background,
         # add_absolved_education,
-        add_absolved_education_cz
+        add_absolved_education_conditionally,
         # add_current_education,
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,
