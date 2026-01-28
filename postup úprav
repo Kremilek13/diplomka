@@ -13,3 +13,15 @@ konečně mám data, takže můžu ladit, podařilo se mi zprovoznit margináln�
 27.1.2026
 nutné dopsat reporting k education, nutný postprocessing aby bylo všechno česky - skript zvlášť
 jinak to vypadá že to funguje :D
+
+28. 1. 2026
+opraveny chyby
+vytvořen skript pro přiřazení ekonomické aktivity
+
+
+to do: 
+    dopsat reporting
+    doplnit marginálie ekonomické aktivity a vzdělání do ConditionalAttributeAdder v generate_individuals.py
+        nutné přidat sloupec s překategorizovaným vzděláním a ekonomické aktivity
+    postprocessing rozpuštění kategorií neidentifikováno ještě nevím jak
+    překlad v postprocessingu

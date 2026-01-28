@@ -7,6 +7,8 @@ from attributes.individual.drivers_license import (add_license_age_to_synthetic_
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
                                                    get_and_fit_motor_cycle_license)
+from attributes.individual.economical_activity import fit_activity
+from attributes.individual.education_cz import fit_edu
 from attributes.individual.education.current_education import (add_education_age_group, current_education_margin_names,
                                                                fit_joint_current_education)
 from attributes.individual.education.education_attainment import (add_education_attainment_age_group,
@@ -24,7 +26,6 @@ from gensynthpop.evaluation.validation import validate_synthetic_population_fit
 from gensynthpop.utils.extractors import (get_margin_frames_from_synthetic_population,
                                           synthetic_population_to_contingency)
 from reporting.reporting import score_synthetic_population
-from attributes.individual.education_cz import fit_edu
 
 def instantiate_population(_=None) -> pd.DataFrame:
     """
@@ -76,11 +77,8 @@ def add_gender_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     """
     print("Adding gender conditioned on age group")
     df_contingency = fit_joint_age_gender()
-    print(df_contingency)
     df_margins_age_group = read_marginal_data(age_groups, 'age_group')
-    print(df_margins_age_group)
     df_margins_gender = read_marginal_data(['male', 'female'], 'gender')
-    print(df_margins_gender)
 
     df = ConditionalAttributeAdder(
             df_synthetic_population=df_synth_pop,
@@ -431,6 +429,35 @@ def add_absolved_education_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataF
     return df
 
 
+def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds economical activity conditioned on age group and gender.
+    Age group and gender have already been added to the synthetic population.
+
+
+    Args:
+        df_synth_pop:
+
+    Returns:
+
+    """
+    print("Adding economical activity conditioned on age group and gender")
+    df_contingency = fit_activity()
+
+    df = ConditionalAttributeAdder(
+            df_synth_pop,
+            df_contingency,
+            "economical_activity",
+            ["neighb_code"]
+    ).add_margins(
+            [read_marginal_data(age_groups, "age_group"), read_marginal_data(["male", "female"], "gender")],
+            [["age_group"], ["gender"]]
+    ).run()
+
+    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "economical_activity"], "economical_activity")
+
+    return df
+
 
 if __name__ == "__main__":
     # delete_previous_results()
@@ -444,6 +471,7 @@ if __name__ == "__main__":
         # add_migration_background,
         # add_absolved_education,
         add_absolved_education_conditionally,
+		add_economical_activity,
         # add_current_education,
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,

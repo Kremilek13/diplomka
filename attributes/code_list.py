@@ -53,7 +53,7 @@ def code_list_education(df) -> pd.DataFrame:
 def code_list_economical_activity(df) -> pd.DataFrame:
     codebook_path = os.path.join(
         os.path.dirname(__file__),
-        '../../datasources/code_lists/ekonomicka_aktivita.csv'
+        '../datasources/code_lists/ekonomicka_aktivita.csv'
     )
     df_codes = pd.read_csv(codebook_path, sep=";", encoding="utf-8")
     df_codes.columns = df_codes.columns.str.strip().str.lower()

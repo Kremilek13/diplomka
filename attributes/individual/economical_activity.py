@@ -3,27 +3,27 @@ import os
 import pandas as pd
 from ipfn import ipfn
 
-from attributes.code_list import code_list_age_group, code_list_gender, code_list_education
+from attributes.code_list import code_list_age_group, code_list_gender, code_list_economical_activity
 from attributes.marginal_data_reader import age_groups, read_marginal_data
 from gensynthpop.evaluation.validation import validate_fitted_distribution
 
-def read_edu() -> pd.DataFrame:
+def read_activity() -> pd.DataFrame:
     data_path = os.path.join(
             os.path.dirname(__file__),
-            '../../datasources/individual/education/vzdelani_pohlavi_vek.csv'
+            '../../datasources/individual/economical_activity/EA_pohlavi_vek.csv'
     )
     df = pd.read_csv(data_path, sep=",")
-    df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "vzdelani":"education", "pocet_obyvatel":"count"})
+    df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "ekonomicka_aktivita":"economical_activity", "pocet_obyvatel":"count"})
     code_list_age_group(df)
     code_list_gender(df)
-    code_list_education(df)
+    code_list_economical_activity(df)
 
     print(df)
     return df
 
 
-def fit_edu() -> pd.DataFrame:
-    df = read_edu()
+def fit_activity() -> pd.DataFrame:
+    df = read_activity()
     df["count"] = df["count"].astype(float)
 
     margins_gender = read_marginal_data(
