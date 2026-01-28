@@ -81,7 +81,7 @@ def score_table_integer_age(df: pd.DataFrame) -> List[ComparisonTuple]:
     observed_margins = synthetic_population_to_contingency(df, ["age"])
 
     return [
-        (observed_margins, expected_margins, "integer", "age"),
+        (observed_margins, expected_margins, "integer age", ""),
         (observed_gender, expected_gender, "integer age", "gender"),
     ]
 
