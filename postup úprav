@@ -22,7 +22,8 @@ vytvořen skript pro přiřazení ekonomické aktivity
 doplněny marginálie ekonomické aktivity a vzdělání do ConditionalAttributeAdder v generate_individuals.py a příslušném skriptu čtení marginálií 
 přidán sloupec s překategorizovaným vzděláním
 
-
+30.1.
+vylepšen economical activity skript, podle vzdělání
 
 to do: 
     dopsat reporting

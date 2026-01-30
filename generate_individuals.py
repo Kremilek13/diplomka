@@ -7,7 +7,7 @@ from attributes.individual.drivers_license import (add_license_age_to_synthetic_
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
                                                    get_and_fit_motor_cycle_license)
-from attributes.individual.economical_activity import fit_activity
+from attributes.individual.economical_activity import (fit_activity, read_df_activity_marginal)
 from attributes.individual.education_cz import (fit_edu, read_df_education_marginal)
 from attributes.individual.education.current_education import (add_education_age_group, current_education_margin_names,
                                                                fit_joint_current_education)
@@ -467,7 +467,14 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
 
     """
     print("Adding economical activity conditioned on age group and gender")
-    df_contingency = fit_activity()
+    df_contingency = fit_activity(df_synth_pop)
+    margins_gender = read_marginal_data(['male', 'female'], 'gender')
+    margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "age_group"],
+                                                            True).reset_index()
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group"],
+                                                             True).reset_index()
+    margins_activity = read_df_activity_marginal()
+
 
     df = ConditionalAttributeAdder(
             df_synth_pop,
@@ -475,8 +482,12 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
             "economical_activity",
             ["neighb_code"]
     ).add_margins(
-            [read_marginal_data(age_groups, "age_group"), read_marginal_data(["male", "female"], "gender")],
-            [["age_group"], ["gender"]]
+            [margins_gender,
+             margins_age_group, 
+             margins_activity,
+             margins_gender_age],
+            [["gender"], ["age_group"], ["economical_activity"], 
+             ["gender", "age_group"]]
     ).run()
 
     validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "economical_activity"], "economical_activity")

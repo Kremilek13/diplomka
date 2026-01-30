@@ -25,7 +25,7 @@ def read_edu() -> pd.DataFrame:
 
 def fit_edu(df_synth_pop) -> pd.DataFrame:
     df = read_edu().groupby(['age_group', 'gender', 'education']).sum().reset_index()
-    # df["count"] = df["count"].astype(float)
+    df["count"] = df["count"].astype(float)
 
     margins_gender = read_marginal_data(
             ['male', 'female'], 'gender'
@@ -41,7 +41,7 @@ def fit_edu(df_synth_pop) -> pd.DataFrame:
 
     df_fitted = ipfn.ipfn(
             df.copy().astype({'count': 'float'}),
-            aggregates=[margins_gender, margins_age, margins_education, margins_gender_age],
+            aggregates=[margins_gender, margins_age_group, margins_education, margins_gender_age],
             dimensions=[['gender'], ['age_group'], ['education'], ['gender','age_group']],
             weight_col='count'
     ).iteration()
@@ -57,14 +57,15 @@ def fit_edu(df_synth_pop) -> pd.DataFrame:
 
 def read_df_education_marginal() -> pd.DataFrame:
     df_education_marginal = read_marginal_data(
-        ['education_primary_no', 'education_secondary', 'education_higher', 'population'],
+        ['education_primary_no', 'education_secondary', 'education_higher', 'education_undefined', 'population'],
         'education'
     ).pivot(
             index="neighb_code", columns='education', values='count'
     )
 
-    unknown = df_education_marginal.population - df_education_marginal.education_primary_no - df_education_marginal.education_secondary - df_education_marginal.education_higher
-    df_education_marginal.loc[:, ["education_undefined"]] = unknown
+    children = df_education_marginal.population - df_education_marginal.education_primary_no - df_education_marginal.education_secondary - df_education_marginal.education_higher - df_education_marginal.education_undefined
+    df_education_marginal['education_primary_no'] = df_education_marginal['education_primary_no'] + children
+    # df_education_marginal.loc[:, ["education_primary_no"]] = children
 
     df_education_marginal = df_education_marginal.drop("population", axis=1).reset_index()
 
