@@ -18,7 +18,7 @@ def read_marginal_data(columns: List[str], attribute_name: str) -> pd.DataFrame:
 
     """
     margins_path = os.path.join(os.path.dirname(__file__),
-                                '../datasources/marginal/mc_brno_oby.csv')
+                                '../datasources/marginal/mc_brno_oby_new.csv')
     df_marginal = pd.read_csv(margins_path, sep=";")
     column_names = [original for original, renamed in marginal_data_code_map.items() if renamed in columns]
     if 'mc' not in column_names:
@@ -87,6 +87,10 @@ marginal_data_code_map = {
     'oby_25_44': '25-44',
     'oby_45_64': '45-64',
     'oby_65avice': '64+',
+    'vzd_zaklad_nizsi': 'education_primary_no',
+    'vzdel_stredni': 'education_secondary',
+    'vzdel_vs': 'education_higher',
+    'vzdel_nezjisteno': 'education_undefined',
     # 'Ongehuwd_13': 'unmarried',
     # 'Gehuwd_14': 'maried',
     # 'WestersTotaal_17': 'Western',

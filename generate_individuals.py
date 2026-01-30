@@ -8,7 +8,7 @@ from attributes.individual.drivers_license import (add_license_age_to_synthetic_
                                                    get_and_fit_conditional_moped_license,
                                                    get_and_fit_motor_cycle_license)
 from attributes.individual.economical_activity import fit_activity
-from attributes.individual.education_cz import fit_edu
+from attributes.individual.education_cz import (fit_edu, read_df_education_marginal)
 from attributes.individual.education.current_education import (add_education_age_group, current_education_margin_names,
                                                                fit_joint_current_education)
 from attributes.individual.education.education_attainment import (add_education_attainment_age_group,
@@ -412,7 +412,28 @@ def add_absolved_education_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataF
 
     """
     print("Adding education conditioned on age group and gender")
-    df_contingency = fit_edu()
+    df_contingency = fit_edu(df_synth_pop)
+    print("Fitted education contingency:")
+    print(df_contingency.to_string())
+    print("ending education contingency")
+    margins_gender = read_marginal_data(['male', 'female'], 'gender')
+    print("margins gender:")
+    print(margins_gender)
+    print("ending margins gender")
+    margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "age_group"],
+                                                            True).reset_index()
+    print("margins age group:")
+    print(margins_age_group)
+    print("ending margins age group")
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group"],
+                                                             True).reset_index()
+    print("margins gender age:")
+    print(margins_gender_age)
+    print("ending   margins gender age")    
+    margins_education = read_df_education_marginal()
+    print("margins education:")
+    print(margins_education.to_string())
+    print("ending margins education")
 
     df = ConditionalAttributeAdder(
             df_synth_pop,
@@ -420,8 +441,12 @@ def add_absolved_education_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataF
             "education",
             ["neighb_code"]
     ).add_margins(
-            [read_marginal_data(age_groups, "age_group"), read_marginal_data(["male", "female"], "gender")],
-            [["age_group"], ["gender"]]
+            [margins_gender,
+             margins_age_group, 
+             margins_education,
+             margins_gender_age],
+            [["gender"], ["age_group"], ["education"], 
+             ["gender", "age_group"]]
     ).run()
     
     validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "education"], "education")
@@ -471,7 +496,7 @@ if __name__ == "__main__":
         # add_migration_background,
         # add_absolved_education,
         add_absolved_education_conditionally,
-		add_economical_activity,
+	    add_economical_activity,
         # add_current_education,
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,

@@ -39,9 +39,9 @@ def code_list_education(df) -> pd.DataFrame:
     )
     df_codes = pd.read_csv(codebook_path, sep=";", encoding="utf-8")
     df_codes.columns = df_codes.columns.str.strip().str.lower()
-    if 'kód' not in df_codes.columns or 'text' not in df_codes.columns:
-        raise ValueError(f"Číselník musí obsahovat sloupce 'kód' a 'text'. Nalezeno: {df_codes.columns.tolist()}")
-    mapping = dict(zip(df_codes['kód'], df_codes['text']))
+    if 'kód' not in df_codes.columns or 'kategorie' not in df_codes.columns:
+        raise ValueError(f"Číselník musí obsahovat sloupce 'kód' a 'kategorie'. Nalezeno: {df_codes.columns.tolist()}")
+    mapping = dict(zip(df_codes['kód'], df_codes['kategorie']))
     df["education"] = df["education"].map(mapping)
 
     if df["education"].isna().any():

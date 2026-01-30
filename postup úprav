@@ -18,6 +18,11 @@ jinak to vypadá že to funguje :D
 opraveny chyby
 vytvořen skript pro přiřazení ekonomické aktivity
 
+29.1. a 30.1.
+doplněny marginálie ekonomické aktivity a vzdělání do ConditionalAttributeAdder v generate_individuals.py a příslušném skriptu čtení marginálií 
+přidán sloupec s překategorizovaným vzděláním
+
+
 
 to do: 
     dopsat reporting
