@@ -5,11 +5,14 @@ import pandas as pd
 from attributes.individual.drivers_license import (get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
                                                    get_and_fit_motor_cycle_license)
+from attributes.individual.economical_activity import fit_activity
+from attributes.individual.economical_activity import read_df_activity_marginal
 from attributes.individual.education.current_education import (current_education_margin_names,
                                                                fit_joint_current_education)
 from attributes.individual.education.education_attainment import (add_3_categories_education_level,
                                                                   fit_joint_absolved_education,
                                                                   get_education_attainment_margins)
+from attributes.individual.education_cz import (fit_edu, read_df_education_marginal)
 from attributes.individual.gender import fit_joint_age_gender
 from attributes.individual.household_position.household_position import (fit_household_position_joint_age_gender,
                                                                          read_households_margins)
@@ -27,6 +30,8 @@ def score_synthetic_population(df_synth_pop: pd.DataFrame):
         score_table_age_group,
         score_table_gender,
         score_table_integer_age,
+        score_table_education,
+        score_table_economical_activity,
         # score_table_migration_background,
         # score_absolved_education,
         # score_current_eduction,
@@ -239,6 +244,61 @@ def score_table_household_position(df: pd.DataFrame) -> List[ComparisonTuple]:
          expected_joint.set_index(["household_position", "gender", "small_age_group"]),
          "household position", r"age group $\times$ gender")
     ]
+
+def score_table_education(df: pd.DataFrame) -> List[ComparisonTuple]:
+    expected_margins = read_df_education_marginal().set_index(["neighb_code", "education"])
+    expected_joint = fit_edu(df)
+    expected_age_group = expected_joint.groupby(['education', 'age_group']).sum()["count"]
+    expected_gender = expected_joint.groupby(['education', 'gender']).sum()["count"]
+
+    observed_margins = synthetic_population_to_contingency(df, ["neighb_code", "education"],
+                                                           full_crostab=True)
+    observed_joint = synthetic_population_to_contingency(df, ["age_group", "gender", "education"],
+                                                         full_crostab=True)
+    observed_age_group = synthetic_population_to_contingency(df, ["age_group", "education"],
+                                                             full_crostab=True)
+    observed_gender = synthetic_population_to_contingency(df, ["gender", "education"], full_crostab=True)
+
+    return [
+        (observed_margins, expected_margins, "education", "neighborhood"),
+        (observed_age_group, expected_age_group, "education", "age group"),
+        (observed_gender, expected_gender, "education", "gender"),
+        (
+            observed_joint,
+            expected_joint.set_index(["age_group", "gender", "education"]),
+            "education",
+            "age_group_x_gender" 
+            # r"age group $\times$ gender"
+        )
+    ]
+
+def score_table_economical_activity(df: pd.DataFrame) -> List[ComparisonTuple]:
+    expected_margins = read_df_activity_marginal().set_index(["neighb_code", "economical_activity"])
+    expected_joint = fit_activity(df)
+    expected_age_group = expected_joint.groupby(['economical_activity', 'age_group']).sum()["count"]
+    expected_gender = expected_joint.groupby(['economical_activity', 'gender']).sum()["count"]
+
+    observed_margins = synthetic_population_to_contingency(df, ["neighb_code", "economical_activity"],
+                                                           full_crostab=True)
+    observed_joint = synthetic_population_to_contingency(df, ["age_group", "gender", "economical_activity"],
+                                                         full_crostab=True)
+    observed_age_group = synthetic_population_to_contingency(df, ["age_group", "economical_activity"],
+                                                             full_crostab=True)
+    observed_gender = synthetic_population_to_contingency(df, ["gender", "economical_activity"], full_crostab=True)
+
+    return [
+        (observed_margins, expected_margins, "economical activity", "neighborhood"),
+        (observed_age_group, expected_age_group, "economical activity", "age group"),
+        (observed_gender, expected_gender, "economical activity", "gender"),
+        (
+            observed_joint,
+            expected_joint.set_index(["age_group", "gender", "economical_activity"]),
+            "economical activity",
+            "age_group_x_gender" 
+            # r"age group $\times$ gender"
+        )
+    ]
+
 
 
 def readable_name(names, dimension):

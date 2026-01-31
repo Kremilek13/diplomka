@@ -25,9 +25,9 @@ přidán sloupec s překategorizovaným vzděláním
 30.1.
 vylepšen economical activity skript, podle vzdělání
 
+31.1.
+vytvořen reporting pro education a economical activity
+
 to do: 
-    dopsat reporting
-    doplnit marginálie ekonomické aktivity a vzdělání do ConditionalAttributeAdder v generate_individuals.py
-        nutné přidat sloupec s překategorizovaným vzděláním a ekonomické aktivity
     postprocessing rozpuštění kategorií neidentifikováno ještě nevím jak
     překlad v postprocessingu

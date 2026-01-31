@@ -392,11 +392,15 @@ def perform_stage(version: int, action: Callable[[Optional[pd.DataFrame]], pd.Da
 
 
 def delete_previous_results():
-    output_folder = 'output/synthetic_population/individuals/'    
-    for file in os.listdir(output_folder):
-        if file.startswith("synth_pop_DHWZ_v"):
+    output_folder = [
+                        # 'output/synthetic_population/individuals/', 
+                        'output/distributions/'
+                        ]
+    for output_folder in output_folder:
+        for file in os.listdir(output_folder):
+                # if file.startswith("synth_pop_DHWZ_v"):
                 os.remove(os.path.join(output_folder, file))
-    print(f"Deleted previous results in {output_folder}")
+        print(f"Deleted previous results in {output_folder}")
     
     
 def add_absolved_education_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
@@ -496,7 +500,7 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    # delete_previous_results()
+    delete_previous_results()
 
     df_synth_pop_iteration = perform_stage(1, instantiate_population)
 
