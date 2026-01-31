@@ -27,7 +27,13 @@ vylepšen economical activity skript, podle vzdělání
 
 31.1.
 vytvořen reporting pro education a economical activity
+pro každý atribut:
+        nedefinováno
+        vyfiltrovat daný věk a pohlaví (celkem 10 skupin) (podmíněné proměnné)
+        zjistit rozdělení u definováno
+        přiřadit podle rozdělení 
+
+
 
 to do: 
-    postprocessing rozpuštění kategorií neidentifikováno ještě nevím jak
     překlad v postprocessingu

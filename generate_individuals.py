@@ -3,6 +3,7 @@ from typing import Callable, Optional
 
 import pandas as pd
 
+from attributes.delete_unknown import replace_value
 from attributes.individual.drivers_license import (add_license_age_to_synthetic_population,
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
@@ -519,9 +520,22 @@ if __name__ == "__main__":
         # add_household_position
     ]
 
-    for v, stage in enumerate(stages):
-        df_synth_pop_iteration = perform_stage(v + 2, stage, df_synth_pop_iteration)
+    current_version = 2
+    for stage in stages:
+        df_synth_pop_iteration = perform_stage(current_version, stage, df_synth_pop_iteration)
+        current_version += 1
 
     print("Done! Here is what the synthetic population looks like")
     print(df_synth_pop_iteration.dtypes)
     score_synthetic_population(df_synth_pop_iteration)
+
+    attributes_to_correct = [
+        lambda df: replace_value(df, 'education', 'education_undefined', ['gender', 'age_group', 'neighb_code']),
+        lambda df: replace_value(df, 'economical_activity', 'economical_activity_undefined', ['gender', 'age_group', 'neighb_code'])
+    ]
+
+    for attribute in attributes_to_correct:
+        df_synth_pop_iteration = perform_stage(current_version, attribute, df_synth_pop_iteration)
+        current_version += 1
+
+    print("Final synthetic population after corrections")
