@@ -43,6 +43,11 @@ postprocessing - filtrace skupin 0-4 a 8-14 - nastavení pevné hodnoty a pro 5-
 
 to do: 
     překlad v postprocessingu
+    upravit activity_0_14 - prostě aby byla kratší
+    dopsat pracující studenti - pravděpodobnost je s věkem vyšší (24-44)
+    dopsat delete unknown pro specific education
+
+vyřešeno 2.2.
     vyřešit 0-5 školáci a 7-14 předškoláci
         shuffle - ale musí být po městských častech protože tam nastal fit
             problém nestejný počet 0-5 a 7-14 takže by tam mohly být přebytky

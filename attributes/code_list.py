@@ -32,21 +32,22 @@ def code_list_age_group(df) -> pd.DataFrame:
     return df
 
 
-def code_list_education(df) -> pd.DataFrame:
+def code_list_education(df, column) -> pd.DataFrame:
+    '''df for translation; column: 'kategorie' for general category, 'text' for specific category'''
     codebook_path = os.path.join(
         os.path.dirname(__file__),
         '../datasources/code_lists/vzdelani.csv'
     )
     df_codes = pd.read_csv(codebook_path, sep=";", encoding="utf-8")
     df_codes.columns = df_codes.columns.str.strip().str.lower()
-    if 'kód' not in df_codes.columns or 'kategorie' not in df_codes.columns:
-        raise ValueError(f"Číselník musí obsahovat sloupce 'kód' a 'kategorie'. Nalezeno: {df_codes.columns.tolist()}")
-    mapping = dict(zip(df_codes['kód'], df_codes['kategorie']))
-    df["education"] = df["education"].map(mapping)
+    if 'kód' not in df_codes.columns or column not in df_codes.columns:
+        raise ValueError(f"Číselník musí obsahovat sloupce 'kód' a '{column}'. Nalezeno: {df_codes.columns.tolist()}")
+    mapping = dict(zip(df_codes['kód'], df_codes[column]))
+    df['education'] = df['education'].map(mapping)
 
-    if df["education"].isna().any():
-        print("POZOR: Některé kódy vzdělání se nepodařilo přeložit!")
-        print(df[df["education"].isna()])
+    if df['education'].isna().any():
+        print(f"POZOR: Některé kódy {column} se nepodařilo přeložit!")
+        print(df[df['education'].isna()])
     return df
 
 
@@ -67,3 +68,15 @@ def code_list_economical_activity(df) -> pd.DataFrame:
         print(df[df["economical_activity"].isna()])
     return df
 
+def create_dictionary() -> dict:
+    '''Create a dictionary from code list dataframe table (for specific to general education mapping)'''
+    codebook_path = os.path.join(
+        os.path.dirname(__file__),
+        '../datasources/code_lists/vzdelani.csv'
+    )
+    df_codes = pd.read_csv(codebook_path, sep=";", encoding="utf-8")
+    df_codes['text'] = df_codes['text'].str.strip()
+    df_codes['kategorie'] = df_codes['kategorie'].str.strip()
+    mapping_dict = dict(zip(df_codes['text'], df_codes['kategorie']))
+
+    return mapping_dict

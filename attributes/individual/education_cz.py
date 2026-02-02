@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from ipfn import ipfn
 
-from attributes.code_list import code_list_age_group, code_list_gender, code_list_education
+from attributes.code_list import code_list_age_group, code_list_gender, code_list_education, create_dictionary
 from attributes.marginal_data_reader import age_groups, read_marginal_data
 from gensynthpop.evaluation.validation import validate_fitted_distribution
 from gensynthpop.utils.extractors import synthetic_population_to_contingency
@@ -17,7 +17,7 @@ def read_edu() -> pd.DataFrame:
     df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "vzdelani":"education", "pocet_obyvatel":"count"})
     code_list_age_group(df)
     code_list_gender(df)
-    code_list_education(df)
+    code_list_education(df, 'kategorie')
 
     print(df)
     return df
@@ -27,12 +27,8 @@ def fit_edu(df_synth_pop) -> pd.DataFrame:
     df = read_edu().groupby(['age_group', 'gender', 'education']).sum().reset_index()
     df["count"] = df["count"].astype(float)
 
-    margins_gender = read_marginal_data(
-            ['male', 'female'], 'gender'
-    ).groupby(['gender']).sum()["count"]
-
+    margins_gender = read_marginal_data(['male', 'female'], 'gender').groupby(['gender']).sum()["count"]
     margins_age = read_marginal_data(age_groups, 'age_group').groupby('age_group').sum()["count"]
-
     margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group"])["count"]
     margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["age_group"])["count"]
     margins_education = read_df_education_marginal().groupby(
@@ -78,3 +74,54 @@ def read_df_education_marginal() -> pd.DataFrame:
     )
 
     return df_education_marginal
+
+def read_spec_edu() -> pd.DataFrame:
+    data_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../datasources/individual/education/vzdelani_pohlavi_vek.csv'
+    )
+    df = pd.read_csv(data_path, sep=",")
+    df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "vzdelani":"education", "pocet_obyvatel":"count"})
+    code_list_age_group(df)
+    code_list_gender(df)
+    code_list_education(df, 'text')
+    df = df.rename(columns={"education":"education_specific"})
+
+    print(df)
+    return df
+
+def fit_specific_education(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+    df_specific_education = read_spec_edu() 
+    df_specific_education["count"] = df_specific_education["count"].astype(float)
+
+    mapping_dict = create_dictionary()
+    df_specific_education['education_coarse'] = df_specific_education['education_specific'].str.strip().map(mapping_dict)
+
+    df_seed = df_specific_education.groupby(
+        ['age_group', 'gender', 'education_coarse', 'education_specific']
+    )['count'].sum().reset_index()
+
+    margins_gender = synthetic_population_to_contingency(df_synth_pop, ["gender"])["count"]
+    margins_age = synthetic_population_to_contingency(df_synth_pop, ["age_group"])["count"]
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group"])["count"]
+    margins_coarse_edu = synthetic_population_to_contingency(df_synth_pop, ["education"])["count"]
+    
+    # DŮLEŽITÉ: V seedu se sloupec jmenuje 'education_coarse', ale v populaci 'education'.
+    # IPFN potřebuje, aby se název indexu marginálie shodoval s názvem sloupce v seedu.
+    margins_coarse_edu.index.name = 'education_coarse'
+
+    df_fitted = ipfn.ipfn(
+            df_seed.copy().astype({'count': 'float'}),
+            aggregates=[margins_gender, margins_age, margins_gender_age, margins_coarse_edu],
+            dimensions=[['gender'], ['age_group'], ['gender', 'age_group'], ['education_coarse']],
+            weight_col='count'
+    ).iteration()
+
+    name = "specific_edu X coarse_edu X age X gender"
+    
+    validate_fitted_distribution(df_fitted, margins_age, "age_group", name)
+    validate_fitted_distribution(df_fitted, margins_gender, "gender", name)
+    validate_fitted_distribution(df_fitted, margins_gender_age, ['gender', 'age_group'], name)
+    validate_fitted_distribution(df_fitted, margins_coarse_edu, 'education_coarse', name)
+
+    return df_fitted

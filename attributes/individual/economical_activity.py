@@ -35,21 +35,21 @@ def fit_activity(df_synth_pop) -> pd.DataFrame:
 
     margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group"])["count"]
     margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["age_group"])["count"]
-    margins_education = read_df_activity_marginal().groupby(
+    margins_activity = read_df_activity_marginal().groupby(
             'economical_activity'
     )["count"].sum()
 
     df_fitted = ipfn.ipfn(
             df.copy().astype({'count': 'float'}),
-            aggregates=[margins_gender, margins_age],
-            dimensions=[['gender'], ['age_group']],
+            aggregates=[margins_gender, margins_age, margins_activity, margins_gender_age],
+            dimensions=[['gender'], ['age_group'],  ['economical_activity'], ['gender','age_group']],
             weight_col='count'
     ).iteration()
 
     name = "economical_activity X age group X gender"
     validate_fitted_distribution(df_fitted, margins_age, "age_group", name)
     validate_fitted_distribution(df_fitted, margins_gender, "gender", name)
-    validate_fitted_distribution(df_fitted, margins_education, 'economical_activity', name)
+    validate_fitted_distribution(df_fitted, margins_activity, 'economical_activity', name)
     validate_fitted_distribution(df_fitted, margins_gender_age, ['gender', 'age_group'], name)
 
     return df_fitted
@@ -62,23 +62,7 @@ def read_df_activity_marginal() -> pd.DataFrame:
          'economical_activity_preschool_others_dependent', 'economical_activity_nonworking_students_pupils',
          'economical_activity_undefined'],
         'economical_activity'
-    # ).pivot(
-    #         index="neighb_code", columns='economical_activity', values='count'
     )
-
-    # children = df_activity_marginal.population - df_activity_marginal.economical_activity_employed - df_activity_marginal.economical_activity_working_retired - df_activity_marginal.economical_activity_working_student - df_activity_marginal.economical_activity_selfsufficient - df_activity_marginal.economical_activity_unemployed - df_activity_marginal.economical_activity_nonworking_retired - df_activity_marginal.economical_activity_parental_leave - df_activity_marginal.economical_activity_preschool_others_dependent - df_activity_marginal.economical_activity_undefined
-    # df_activity_marginal['economical_activity_employed'] = df_activity_marginal['economical_activity_employed'] + children
-    # # df_education_marginal.loc[:, ["education_primary_no"]] = children
-
-    # df_education_marginal = df_education_marginal.drop("population", axis=1).reset_index()
-
-    # df_education_marginal = pd.melt(
-    #         df_education_marginal,
-    #         id_vars=["neighb_code"],
-    #         value_vars=["education_primary_no", "education_secondary", "education_higher", "education_undefined"],
-    #         value_name="count",
-    #         var_name="education"
-    # )
 
     return df_activity_marginal
 
@@ -124,7 +108,6 @@ def activity_0_14(df: pd.DataFrame) -> pd.DataFrame:
 
         existing_dependents_under_14 = len(df[
             (df['neighb_code'] == code) & 
-            # (df['age'] > 7) &
             (df['age'] < 15) & 
             (df[COL_TARGET] == CATEGORY_DEPENDENT)
         ])
@@ -174,7 +157,12 @@ def activity_0_14(df: pd.DataFrame) -> pd.DataFrame:
         })
         print(results)
 
-        capacity_dependent = max(0, int(slots_for_children))
+        if slots_for_children > existing_dependents_under_14:
+            capacity_dependent = max(0, int(slots_for_children)) 
+        else:
+            capacity_dependent = max(0, int(existing_dependents_under_14))
+        # slots_for_children je celkem - důchodci; ale může to nabořit strukturu
+        #  možná je lepší použít celkový počet existing_dependents_under_14 - nenabourá strukturu ve věkové skupině 0-14
         CATEGORY_STUDENT = 'economical_activity_nonworking_students_pupils'
         mask_kids = (df['neighb_code'] == code) & (df['age'] >= 0) & (df['age'] <= 14)
         kids_in_hood = df.loc[mask_kids].sort_values(by='age')
