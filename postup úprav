@@ -31,9 +31,25 @@ pro každý atribut:
         nedefinováno
         vyfiltrovat daný věk a pohlaví (celkem 10 skupin) (podmíněné proměnné)
         zjistit rozdělení u definováno
-        přiřadit podle rozdělení 
+        přiřadit podle rozdělení
+
+2.2.
+vyřešen problém s 0-14 ekonomickou aktivitou - závislé předškolní děti vs. žáci a studenti
+postprocessing - filtrace skupin 0-4 a 8-14 - nastavení pevné hodnoty a pro 5-7leté podle marginálií
+            tohle by se dalo, kdyby se vycházelo jenom z kategorie předškolák, nemusí to sedět protože distribuce věku
+            náhodně přidělit starším školák a mladším předškolák (5-7) 
 
 
 
 to do: 
     překlad v postprocessingu
+    vyřešit 0-5 školáci a 7-14 předškoláci
+        shuffle - ale musí být po městských častech protože tam nastal fit
+            problém nestejný počet 0-5 a 7-14 takže by tam mohly být přebytky
+        postprocessing - filtrace skupin 0-4 a 8-14 - nastavení pevné hodnoty a pro 5-7leté podle marginálií
+            tohle by se dalo, kdyby se vycházelo jenom z kategorie předškolák, nemusí to sedět protože distribuce věku
+            náhodně přidělit starším školák a mladším předškolák (5-7)
+        kategorie 0-14 - nějaká závislá skupina
+            podle věku vybrat x nejmladších a těm přiřadit v novém atributu nevzdělává se
+        
+        

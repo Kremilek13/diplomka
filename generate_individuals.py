@@ -8,7 +8,7 @@ from attributes.individual.drivers_license import (add_license_age_to_synthetic_
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
                                                    get_and_fit_motor_cycle_license)
-from attributes.individual.economical_activity import (fit_activity, read_df_activity_marginal)
+from attributes.individual.economical_activity import (fit_activity, read_df_activity_marginal, activity_0_14)
 from attributes.individual.education_cz import (fit_edu, read_df_education_marginal)
 from attributes.individual.education.current_education import (add_education_age_group, current_education_margin_names,
                                                                fit_joint_current_education)
@@ -494,6 +494,8 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
             [["gender"], ["age_group"], ["economical_activity"], 
              ["gender", "age_group"]]
     ).run()
+
+    activity_0_14(df)
 
     validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "economical_activity"], "economical_activity")
 
