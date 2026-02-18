@@ -91,9 +91,9 @@ def add_small_age_group(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
             df_synth_pop = df_synth_pop.drop(redundant_col, axis=1)
     df_synth_pop["small_age_group"] = None
     df_synth_pop.astype({"small_age_group": 'object'})
-    df_synth_pop.loc[df_synth_pop.age >= 95, "small_age_group"] = "95+"
-    df_synth_pop.loc[df_synth_pop.age < 95, "small_age_group"] = df_synth_pop[df_synth_pop.age < 95].age.transform(
-            lambda x: "{lower}-{upper}".format(lower=int(np.floor(x / 5) * 5), upper=int(np.floor(x / 5) * 5) + 5)
+    df_synth_pop.loc[df_synth_pop.age >= 90, "small_age_group"] = "90+"
+    df_synth_pop.loc[df_synth_pop.age < 90, "small_age_group"] = df_synth_pop[df_synth_pop.age < 90].age.transform(
+            lambda x: "{lower}-{upper}".format(lower=int(np.floor(x / 5) * 5), upper=int(np.floor(x / 5) * 5) + 4)
     )
     return df_synth_pop
 
