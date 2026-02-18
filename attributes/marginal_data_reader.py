@@ -18,7 +18,7 @@ def read_marginal_data(columns: List[str], attribute_name: str) -> pd.DataFrame:
 
     """
     margins_path = os.path.join(os.path.dirname(__file__),
-                                '../datasources/marginal/mc_brno_oby_new.csv')
+                                '../datasources/marginal/mc_brno.csv')
     df_marginal = pd.read_csv(margins_path, sep=";")
     column_names = [original for original, renamed in marginal_data_code_map.items() if renamed in columns]
     if 'mc' not in column_names:
@@ -103,15 +103,10 @@ marginal_data_code_map = {
     'ea_rd': 'economical_activity_parental_leave',
     'ea_predskolni_ostatni_zavisle':'economical_activity_preschool_others_dependent',
     'ea_nezjisteno':'economical_activity_undefined',
-    # 'Ongehuwd_13': 'unmarried',
-    # 'Gehuwd_14': 'maried',
-    # 'WestersTotaal_17': 'Western',
-    # 'NietWestersTotaal_18': 'NonWestern',
-    # 'OpleidingsniveauLaag_64': 'education_absolved_low',
-    # 'OpleidingsniveauMiddelbaar_65': 'education_absolved_middle',
-    # 'OpleidingsniveauHoog_66': 'education_absolved_high',
-    # 'HuishoudensTotaal_28': 'households',
-    # 'Eenpersoonshuishoudens_29': 'single_person',
-    # 'HuishoudensZonderKinderen_30': 'without_children',
-    # 'HuishoudensMetKinderen_31': 'with_children'
+    'rs_nezadani': 'unmarried',
+    'rs_vdani_rp': 'married',
+    'pocet_hd': 'households',
+    'hd_jednotlivci': 'single_person',
+    'hd_s_jednou_rodinnou_bez_deti': 'without_children',
+    'hd_s_jednou_rodinnou_s_detmi': 'with_children'
 }

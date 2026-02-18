@@ -1,24 +1,20 @@
 household_data_code_map = {
-    'Geslacht': 'gender',
-    'Leeftijd': 'age_group',
-    'Regio\'s': 'region',
-    'Perioden': 'period',
-    'Totaal personen in huishoudens (aantal)': 'total_members',
-    'Personen in particuliere huishoudens/Totaal in particuliere huishoudens (aantal)': 'total_private_members',
-    'Personen in particuliere huishoudens/Thuiswonend kind (aantal)': 'child',
-    'Personen in particuliere huishoudens/Alleenstaand (aantal)': 'single',
-    'Personen in particuliere huishoudens/Samenwonend/Totaal samenwonende personen (aantal)': 'living_together',
-    'Personen in particuliere huishoudens/Samenwonend/Partner in niet-gehuwd paar zonder ki... (aantal)':
-        'non_married_no_children',
-    'Personen in particuliere huishoudens/Samenwonend/Partner in gehuwd paar zonder kinderen (aantal)':
-        'married_no_children',
-    'Personen in particuliere huishoudens/Samenwonend/Partner in niet-gehuwd paar met kinderen (aantal)':
-        'non_married_with_children',
-    'Personen in particuliere huishoudens/Samenwonend/Partner in gehuwd paar met kinderen (aantal)':
-        'married_with_children',
-    'Personen in particuliere huishoudens/Ouder in eenouderhuishouden (aantal)': 'single_parent',
-    'Personen in particuliere huishoudens/Overig lid huishouden (aantal)': 'additional_members',
-    'Personen in institutionele huishoudens (aantal)': 'institutional_members',
+    'pohlavi': 'gender',
+    'vek_skupina': 'age_group',
+    # 'Regio\'s': 'region',
+    # 'Perioden': 'period',
+    # 'Totaal personen in huishoudens (aantal)': 'total_members',
+    # 'Personen in particuliere huishoudens/Totaal in particuliere huishoudens (aantal)': 'total_private_members',
+    'dite': 'child',
+    'jednotlivec': 'single',
+    # 'Personen in particuliere huishoudens/Samenwonend/Totaal samenwonende personen (aantal)': 'living_together',
+    'nesezd_partner_bez_deti': 'non_married_no_children',
+    'manzel_ka_bez_deti': 'married_no_children',
+    'nesezd_partner_s_detmi': 'non_married_with_children',
+    'manzel_ka_s_detmi': 'married_with_children',
+    'osamely_rodic': 'single_parent',
+    'ostatni': 'additional_members',
+    # 'Personen in institutionele huishoudens (aantal)': 'institutional_members',
 }
 
 specific_to_grouped_education_map = {

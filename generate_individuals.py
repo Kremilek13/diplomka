@@ -347,8 +347,9 @@ def add_household_position(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     Returns:
     """
     print("household position conditioned on age group, gender and household type")
+    df_synth_pop = add_small_age_group(df_synth_pop)
     df_contingency = fit_household_position_joint_age_gender(df_synth_pop)
-
+    
     margins_gender = read_marginal_data(['male', 'female'], 'gender')
     margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "small_age_group"],
                                                             True).reset_index()
@@ -539,7 +540,7 @@ if __name__ == "__main__":
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,
         # add_moped_drivers_license,
-        # add_household_position
+        add_household_position
     ]
 
     current_version = 2
@@ -551,14 +552,14 @@ if __name__ == "__main__":
     print(df_synth_pop_iteration.dtypes)
     score_synthetic_population(df_synth_pop_iteration)
 
-    attributes_to_correct = [
-        lambda df: replace_value(df, 'education', 'education_undefined', ['gender', 'age_group', 'neighb_code']),
-        lambda df: replace_value(df, 'economical_activity', 'economical_activity_undefined', ['gender', 'age_group', 'neighb_code']),
-        lambda df: replace_value(df, 'education_specific', 'nezjištěno', ['gender', 'age_group', 'neighb_code', 'education'])
-    ]
+    # attributes_to_correct = [
+    #     lambda df: replace_value(df, 'education', 'education_undefined', ['gender', 'age_group', 'neighb_code']),
+    #     lambda df: replace_value(df, 'economical_activity', 'economical_activity_undefined', ['gender', 'age_group', 'neighb_code']),
+    #     lambda df: replace_value(df, 'education_specific', 'nezjištěno', ['gender', 'age_group', 'neighb_code', 'education'])
+    # ]
 
-    for attribute in attributes_to_correct:
-        df_synth_pop_iteration = perform_stage(current_version, attribute, df_synth_pop_iteration)
-        current_version += 1
+    # for attribute in attributes_to_correct:
+    #     df_synth_pop_iteration = perform_stage(current_version, attribute, df_synth_pop_iteration)
+    #     current_version += 1
 
     print("Final synthetic population after corrections")

@@ -44,15 +44,18 @@ def read_household_data(*columns: str) -> pd.DataFrame:
     """
     data_path = os.path.join(
             os.path.dirname(__file__),
-            "../../../datasources/individual/household_position/Huishoudens__personen__regio_26122023_151215.csv"
+            "../../../datasources/individual/household_position/Brno_vek_pohlavi_postaveni_v_domacnosti.csv"
     )
 
-    df = pd.read_csv(data_path, sep=";")
+    df = pd.read_csv(data_path, sep=",")
+    df = df.pivot(index=['pohlavi', 'vek_skupina'], columns='postaveni_v_domacnosti', values='pocet_obyvatel').reset_index()
 
     df.rename(columns=household_data_code_map, inplace=True)
-    df.age_group = df.age_group.transform(cbs_age_group_rename_transform)
-    df.replace({"Mannen": "male", "Vrouwen": "female"}, inplace=True)
-    df.drop(["region", "period"], axis=1, inplace=True)
+    df['age_group'] = df['age_group'].str.replace('_', '-')
+    df['age_group'] = df['age_group'].str.replace('90avice', '90+')
+    # df.age_group = df.age_group.transform(cbs_age_group_rename_transform)
+    df['gender'] = df['gender'].astype(str).replace({"1": "male", "2": "female"})
+    # df.drop(["region", "period"], axis=1, inplace=True)
     df.fillna(0, inplace=True)
     df = df.astype(int, errors='ignore')
     if len(columns) > 0:
@@ -97,43 +100,27 @@ def read_local_household_composition() -> pd.DataFrame:
     """
     data_path = os.path.join(
             os.path.dirname(__file__),
-            "../../../datasources/individual/household_position/Huishoudens__samenstelling__regio_25052024_174751.csv"
+            "../../../datasources/individual/household_position/Brno_vek_typ_domacnosti_pocet_deti.csv"
     )
-    df = pd.read_csv(data_path, sep=';').drop(['Perioden', "Regio's"], axis=1)
+    df = pd.read_csv(data_path, sep=',')
+    df = df.pivot(index=['vek_skupina'], columns='typ_domacnosti', values='pocet_obyvatel').reset_index()
     df.rename(columns={
-        'Leeftijd referentiepersoon': 'reference_person_age',
-        'Particuliere huishoudens: samenstelling/Eenpersoonshuishouden (aantal)': 'single',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Meerpersoonshuishoudens zonder kinderen ('
-        'aantal)': 'no_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Meerpersoonshuishoudens met kinderen ('
-        'aantal)': 'has_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Niet-gehuwd paar/0 kinderen (aantal)':
-            'non_married_0_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Niet-gehuwd paar/1 kind (aantal)':
-            'non_married_1_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Niet-gehuwd paar/2 kinderen (aantal)':
-            'non_married_2_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Niet-gehuwd paar/3 of meer kinderen ('
-        'aantal)': 'non_married_3_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Gehuwd paar/0 kinderen (aantal)':
-            'married_0_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Gehuwd paar/1 kind (aantal)':
-            'married_1_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Gehuwd paar/2 kinderen (aantal)':
-            'married_2_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Gehuwd paar/3 of meer kinderen (aantal)':
-            'married_3_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Eenouderhuishouden/1 kind (aantal)':
-            'single_parent_1_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Eenouderhuishouden/2 kinderen (aantal)':
-            'single_parent_2_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Eenouderhuishouden/3 of meer kinderen ('
-        'aantal)': 'single_parent_3_children',
-        'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Overig huishouden (aantal)': 'miscellaneous',
+        'vek_skupina': 'reference_person_age',
+        'jednotlivec': 'single',
+        'par_bez_deti': 'couple_0_children',
+        'par_1ditei':'couple_1_children',
+        'par_2deti': 'couple_2_children',
+        'par_3avicedeti': 'couple_3_children',
+        'samrodic_1dite': 'single_parent_1_children',
+        'samrodic_2deti': 'single_parent_2_children',
+        'samrodic_3avicedeti': 'single_parent_3_children',
+        # 'Particuliere huishoudens: samenstelling/Meerpersoonshuishouden/Overig huishouden (aantal)': 'miscellaneous',
     }, inplace=True)
-    for i in range(4):
-        df.loc[:, f'couple_{i}_children'] = df[f'married_{i}_children'] + df[f'non_married_{i}_children']
-        df.drop([f'married_{i}_children', f'non_married_{i}_children'], axis=1, inplace=True)
+    df['reference_person_age'] = df['reference_person_age'].str.replace('_', '-')
+    df['reference_person_age'] = df['reference_person_age'].str.replace('90avice', '90+')
+    # for i in range(4):
+    #     df.loc[:, f'couple_{i}_children'] = df[f'married_{i}_children'] + df[f'non_married_{i}_children']
+    #     df.drop([f'married_{i}_children', f'non_married_{i}_children'], axis=1, inplace=True)
 
     return df
 
