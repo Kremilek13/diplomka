@@ -474,7 +474,7 @@ def add_vehicle_ownership(
 
 if __name__ == "__main__":
     # Start from the individual attribute population generated with `gensynthpop_dhwz.py`, which has 11 iterations
-    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v11.pkl')
+    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v8.pkl')
     df_synth_household_iteration = None
 
     stages = [
@@ -482,12 +482,12 @@ if __name__ == "__main__":
         correct_household_assignment,
         create_3_type_household_labels,
         reassign_individual_household_position,
-        add_postal_code,
-        add_income_household_type,
-        add_household_income,
-        add_number_of_licenses,
-        lambda *args: add_vehicle_ownership('car', *args),
-        lambda *args: add_vehicle_ownership('motorcycle', *args),
+        # add_postal_code,
+        # add_income_household_type,
+        # add_household_income,
+        # add_number_of_licenses,
+        # lambda *args: add_vehicle_ownership('car', *args),
+        # lambda *args: add_vehicle_ownership('motorcycle', *args),
     ]
 
     for v, stage in enumerate(stages):

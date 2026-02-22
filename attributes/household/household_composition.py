@@ -11,16 +11,34 @@ def read_couples_age_disparity():
     """
     data_path = os.path.join(
             os.path.dirname(__file__),
-            "../../datasources/household/household_composition/table_7ab235bf-b5a7-4077-bf56-3f5c8efec7d0.csv"
+            "../../datasources/household/household_composition/Snatky_rozdil_veku.csv"
     )
     df = pd.read_csv(data_path, sep=',')
-    df.loc[:, 'male_female_age_gap'] = [
-        '0-0', '', '-1-4', '-5-9', '-10-14', '-15-19', '-20-100', '', '1-4', '5-9', '10-14', '15-19', '20-100'
-    ]
-    df = df.set_index('male_female_age_gap').drop('')['All marriages (%)']
-    df /= 100
-    df.name = 'count'
-    return df
+    def age_gap(row):
+        pohlavi = row['POHLAVI_STARSIHO_SNOUBENCE']
+        rozdil = str(row['ROZDIL_VEKU_SNOUBENCU'])
+        rozdil = str(row['ROZDIL_VEKU_SNOUBENCU']).replace('_', '-')
+        if rozdil == '20avetsi':
+            rozdil = '20-100'
+        if pohlavi == 'MZ':
+            return '0-0'
+        elif pohlavi == 'Z':
+            # Žena starší -> přidáme mínus (-10-14)
+            return '-' + rozdil
+        else:
+            # Muž starší (M) -> necháme tak (10-14)
+            return rozdil
+
+    df['male_female_age_gap'] = df.apply(age_gap, axis=1)
+    df_grouped = df.groupby('male_female_age_gap')['POCET_SNATKU'].sum()
+    total_count = df_grouped.sum()
+    if total_count > 0:
+        df_grouped = df_grouped / total_count
+    
+    df_grouped.name = 'count'
+    print(df_grouped)
+    
+    return df_grouped
 
 
 def read_couples_gender_disparity():
@@ -86,17 +104,14 @@ def get_mother_age_disparity():
     """
     data_path = os.path.join(
             os.path.dirname(__file__),
-            "../../datasources/household/household_composition/Geboorte__kerncijfers_per_regio_25052024_182014.csv"
+            "../../datasources/household/household_composition/Narozeni_2021_podle_veku.csv"
     )
-    df = pd.read_csv(data_path, sep=';')
-    df.columns = df.columns.str.replace(r'Levend geboren kinderen: leeftijd moe.../(.*) \(aantal\)', r'\1', regex=True)
-    df.columns = df.columns.str.replace('Levend geboren kinderen: rangnummer/(\d)e.*', ' ', regex=True)
-    df.drop(['Perioden', "Regio's", " "], axis=1, inplace=True)
-    df.columns = df.columns.str.replace(r'(\d+) tot (\d+) jaar', r'\1-\2', regex=True)
-    df.columns = df.columns.str.replace('45 jaar of ouder', '45-200').str.replace('Jonger dan 20 jaar', '14-20')
-    df = df.T
-    df = df / df.sum()
-    df.columns = ['fraction']
-    df.index.name = 'age_difference'
+    df = pd.read_csv(data_path, sep=',')
 
+    df = df[['MATKA_VEK', 'ZIVE_NAROZENI']].copy()
+    df['age_difference'] = df['MATKA_VEK'].astype(str).str.replace('_', '-')
+    df = df.set_index('age_difference')
+    total_births = df['ZIVE_NAROZENI'].sum()
+    df['fraction'] = df['ZIVE_NAROZENI'] / total_births
+    
     return df['fraction']
