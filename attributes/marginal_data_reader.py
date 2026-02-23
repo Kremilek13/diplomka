@@ -108,5 +108,19 @@ marginal_data_code_map = {
     'pocet_hd': 'households',
     'hd_jednotlivci': 'single_person',
     'hd_s_jednou_rodinnou_bez_deti': 'without_children',
-    'hd_s_jednou_rodinnou_s_detmi': 'with_children'
+    'hd_s_jednou_rodinnou_s_detmi': 'with_children', 
+    'vyj_zam_vramci_obce': 'work_in_neighborhood',
+    'vyj_zam_jinyokres_vkraji': 'work_other_district_same_province',
+    'vyj_zam_jinykraj': 'work_other_province',
+    'vyj_zam_zahranici': 'work_abroad',
+    'zam_bez_staleho_mista': 'no_stable_job',
+    'zam_nevyj': 'not_working',
+    'vyj_zam_nezjisteno': 'unknown_work_status',
+    'vyj_skola_vramci_obce': 'school_in_neighborhood',
+    'vyj_skola_jinyokres_vkraji': 'school_other_district_same_province',
+    'vyj_skola_jinykraj': 'school_other_province',
+    'vyj_skola_zahranici': 'school_abroad',
+    'skola_nevyj': 	'school_not_attending', 
+    'vyj_skola_nezjisteno':'unknown_school_status'
+
 }

@@ -46,6 +46,12 @@ to do:
     upravit activity_0_14 - prostě aby byla kratší
     dopsat pracující studenti - pravděpodobnost je s věkem vyšší (24-44)
     dopsat delete unknown pro specific education
+22.2.2026 - vyjíždějící za prací jsou zaměstnanci, pracující důchodci, pracující studenti, lidé na md
+            studenti jsou jenom nepracující žáci a studenti
+            
+            celkem prace (vyj_zam_celkem, vyj_zam_vramci_obce, vyj_zam_jinyokres_vkraji, vyj_zam_jinykraj, vyj_zam_zahranici) a 
+            celkem skola (vyj_skola_celkem, vyj_skola_vramci_obce, vyj_skola_jinyokres_vkraji, vyj_skola_jinykraj, vyj_skola_zahranici) 
+            se vztahuje k dopravnímu prostředku (součet), frekvence (zvlášť)
 
 vyřešeno 2.2.
     vyřešit 0-5 školáci a 7-14 předškoláci
@@ -56,5 +62,9 @@ vyřešeno 2.2.
             náhodně přidělit starším školák a mladším předškolák (5-7)
         kategorie 0-14 - nějaká závislá skupina
             podle věku vybrat x nejmladších a těm přiřadit v novém atributu nevzdělává se
+
+dilema
+    přiřazování místa dojížďky - jsou tam studenti a pracující ale v ekonomické aktivitě jsou nedefinovaní...
+    nedefinovaní (později) spadnou do jedné ze 3 kategorií ---- přičíst k nedefinovaným + dopsat do vzorku
         
         

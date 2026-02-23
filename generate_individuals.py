@@ -4,6 +4,7 @@ from typing import Callable, Optional
 import pandas as pd
 
 from attributes.delete_unknown import replace_value
+from attributes.individual.commute import fit_place_activity, read_df_activity_place_marginal
 from attributes.individual.drivers_license import (add_license_age_to_synthetic_population,
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
@@ -521,9 +522,69 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def add_ea_for_travelling(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+    skola_hodnoty = ['economical_activity_nonworking_students_pupils'] 
+    prace_hodnoty = ['economical_activity_maternity_leave', 'economical_activity_employed', 'economical_activity_working_student', 'economical_activity_working_retired']
+    bydliste_hodnoty = ['economical_activity_unemployed', 'economical_activity_nonworking_retired', 'economical_activity_selfsufficient', 'economical_activity_parental_leave', 'economical_activity_preschool_others_dependent']
+
+    df_synth_pop['ea_school_work'] = 'nezjištěno'
+    df_synth_pop.loc[df_synth_pop['economical_activity'].isin(skola_hodnoty), 'ea_school_work'] = 'school'
+    df_synth_pop.loc[df_synth_pop['economical_activity'].isin(prace_hodnoty), 'ea_school_work'] = 'work'
+    # use 'not_moving' to match place_activity margin categories (instead of 'residence')
+    df_synth_pop.loc[df_synth_pop['economical_activity'].isin(bydliste_hodnoty), 'ea_school_work'] = 'not_moving'
+
+    # Fix invalid combinations: age 0-14 should not have ea_school_work='work'
+    # Change them to 'school' if they were assigned 'work'
+    # invalid_mask = (df_synth_pop['age_group'] == '0-14') & (df_synth_pop['ea_school_work'] == 'work')
+    # if invalid_mask.sum() > 0:
+    #     print(f"Warning: Correcting {invalid_mask.sum()} individuals aged 0-14 with ea_school_work='work' -> 'school'")
+    #     df_synth_pop.loc[invalid_mask, 'ea_school_work'] = 'school'
+    # df_synth_pop = replace_value(df_synth_pop, 'ea_school_work', 'nezjištěno', ['gender', 'age_group', 'neighb_code'])
+
+
+    return df_synth_pop
+
+def add_commute_destination_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds commute destination conditioned on age group, ea_school_work and gender.
+    Age group, ea_school_work and gender have already been added to the synthetic population.
+
+
+    Args:
+        df_synth_pop:
+
+    Returns:
+
+    """
+    df_contingency = fit_place_activity(df_synth_pop)
+    margins_gender = read_marginal_data(['male', 'female'], 'gender')
+    margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "age_group"], True).reset_index()
+    margins_ea_school_work = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "ea_school_work"], True).reset_index()
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group", "ea_school_work"], True).reset_index()   
+    margins_activity_place = read_df_activity_place_marginal()
+
+    df = ConditionalAttributeAdder(
+            df_synth_pop,
+            df_contingency,
+            "place_activity",
+            ["neighb_code"]
+    ).add_margins(
+            [margins_gender,
+             margins_age_group, 
+             margins_activity_place,
+             margins_ea_school_work,
+             margins_gender_age],
+            [["gender"], ["age_group"], ["place_activity"], ["ea_school_work"],
+             ["gender", "age_group", "ea_school_work"]]
+    ).run()
+    
+    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work", "place_activity"], "place_activity")
+
+    return df
+
 
 if __name__ == "__main__":
-    delete_previous_results()
+    # delete_previous_results()
 
     df_synth_pop_iteration = perform_stage(1, instantiate_population)
 
@@ -534,13 +595,15 @@ if __name__ == "__main__":
         # add_migration_background,
         # add_absolved_education,
         add_absolved_education_conditionally,
-	    add_economical_activity,
-        add_specific_education_conditionally,
+	    add_specific_education_conditionally,
+        add_economical_activity,
+        add_ea_for_travelling,
+        add_commute_destination_conditionally,
         # add_current_education,
         # add_car_drivers_license,
         # add_motor_cycle_drivers_license,
         # add_moped_drivers_license,
-        add_household_position
+        # add_household_position
     ]
 
     current_version = 2
@@ -555,7 +618,8 @@ if __name__ == "__main__":
     # attributes_to_correct = [
     #     lambda df: replace_value(df, 'education', 'education_undefined', ['gender', 'age_group', 'neighb_code']),
     #     lambda df: replace_value(df, 'economical_activity', 'economical_activity_undefined', ['gender', 'age_group', 'neighb_code']),
-    #     lambda df: replace_value(df, 'education_specific', 'nezjištěno', ['gender', 'age_group', 'neighb_code', 'education'])
+    #     lambda df: replace_value(df, 'education_specific', 'nezjištěno', ['gender', 'age_group', 'neighb_code', 'education']),
+    #     lambda df: replace_value(df, 'ea_school_work', 'nezjištěno', ['economical_activity'])
     # ]
 
     # for attribute in attributes_to_correct:
