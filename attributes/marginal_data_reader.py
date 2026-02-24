@@ -121,6 +121,18 @@ marginal_data_code_map = {
     'vyj_skola_jinykraj': 'school_other_province',
     'vyj_skola_zahranici': 'school_abroad',
     'skola_nevyj': 	'school_not_attending', 
-    'vyj_skola_nezjisteno':'unknown_school_status'
+    'vyj_skola_nezjisteno':'unknown_school_status',
+    'vyj_zam_fre_5tydne': 'work_frequency_5_more_times',
+    'vyj_zam_fre_1_4tydne': 'work_frequency_1_4_times',
+    'vyj_zam_fre_mene_tydne': 'work_frequency_less',
+    'vyj_zam_fre_nepravidelne': 'work_frequency_irregular',
+    'vyj_zam_fre_z_jineho_nez_op': 'work_frequency_other_than_op',
+    'vyj_zam_fre_nezjisteno': 'work_frequency_undefined',
+    'vyj_skola_fre_5tydne': 'school_frequency_5_more_times',
+    'vyj_skola_fre_1_4tydne': 'school_frequency_1_4_times',
+    'vyj_skola_fre_mene_tydne': 'school_frequency_less',
+    'vyj_skola_fre_nepravidelne': 'school_frequency_irregular',
+    'vyj_skola_fre_z_jineho_nez_op': 'school_frequency_other_than_op',
+    'vyj_skola_fre_nezjisteno': 'school_frequency_undefined'
 
 }

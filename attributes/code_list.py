@@ -85,6 +85,23 @@ def code_list_place_activity(df) -> pd.DataFrame:
         print(df[df["place_activity"].isna()])
     return df
 
+def code_list_frequency_activity(df) -> pd.DataFrame:
+    codebook_path = os.path.join(
+        os.path.dirname(__file__),
+        '../datasources/code_lists/vyjizdka_f.csv'
+    )
+    df_codes = pd.read_csv(codebook_path, sep=";", encoding="utf-8")
+    df_codes.columns = df_codes.columns.str.strip().str.lower()
+    if 'kód' not in df_codes.columns or 'kategorie' not in df_codes.columns:
+        raise ValueError(f"Číselník musí obsahovat sloupce 'kód' a 'kategorie'. Nalezeno: {df_codes.columns.tolist()}")
+    mapping = dict(zip(df_codes['kód'], df_codes['kategorie']))
+    df["frequency_activity"] = df["frequency_activity"].map(mapping)
+
+    if df["frequency_activity"].isna().any():
+        print("POZOR: Některé kódy místa aktivity se nepodařilo přeložit!")
+        print(df[df["frequency_activity"].isna()])
+    return df
+
 def create_dictionary() -> dict:
     '''Create a dictionary from code list dataframe table (for specific to general education mapping)'''
     codebook_path = os.path.join(
