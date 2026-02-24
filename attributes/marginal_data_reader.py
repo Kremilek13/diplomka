@@ -133,6 +133,16 @@ marginal_data_code_map = {
     'vyj_skola_fre_mene_tydne': 'school_frequency_less',
     'vyj_skola_fre_nepravidelne': 'school_frequency_irregular',
     'vyj_skola_fre_z_jineho_nez_op': 'school_frequency_other_than_op',
-    'vyj_skola_fre_nezjisteno': 'school_frequency_undefined'
+    'vyj_skola_fre_nezjisteno': 'school_frequency_undefined',
+    'vyj_auto_ridic': 'transport_car_driver',
+    'vyj_auto_spoluc': 'transport_car_passenger',
+    'vyj_auto_mhd': 'transport_public',
+    'vyj_auto_autobus': 'transport_bus',
+    'vyj_auto_vlak': 'transport_train',
+    'vyj_auto_moto': 'transport_motorcycle',
+    'vyj_auto_kolo': 'transport_bicycle',
+    'vyj_auto_jiny': 'transport_other',
+    'vyj_auto_zadny_pesky': 'transport_none_walking',
+    'vyj_dopr_nezjisteno': 'transport_undefined'
 
 }

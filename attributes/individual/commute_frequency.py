@@ -12,7 +12,7 @@ from gensynthpop.utils.extractors import synthetic_population_to_contingency
 def read_frequency_activity() -> pd.DataFrame:
     data_path = os.path.join(
             os.path.dirname(__file__),
-            '../../datasources/individual/commute/frekvence_celkova.csv'
+            '../../datasources/individual/commute/frekvence_celkem.csv'
     )
     df = pd.read_csv(data_path, sep=";")
     df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "frekvence_def":"frequency_activity"})
