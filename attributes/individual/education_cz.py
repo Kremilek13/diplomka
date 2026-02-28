@@ -1,4 +1,6 @@
 import os
+import itertools
+
 
 import pandas as pd
 from ipfn import ipfn
@@ -43,7 +45,7 @@ def fit_edu(df_synth_pop) -> pd.DataFrame:
     ).iteration()
 
     name = "education X age group X gender"
-    validate_fitted_distribution(df_fitted, margins_age, "age_group", name)
+    validate_fitted_distribution(df_fitted, margins_age_group, "age_group", name)
     validate_fitted_distribution(df_fitted, margins_gender, "gender", name)
     validate_fitted_distribution(df_fitted, margins_education, 'education', name)
     validate_fitted_distribution(df_fitted, margins_gender_age, ['gender', 'age_group'], name)
@@ -53,25 +55,39 @@ def fit_edu(df_synth_pop) -> pd.DataFrame:
 
 def read_df_education_marginal() -> pd.DataFrame:
     df_education_marginal = read_marginal_data(
-        ['education_primary_no', 'education_secondary', 'education_higher', 'education_undefined', 'population'],
+        ['0-14', 'education_primary_no', 'education_secondary', 'education_higher', 'education_undefined'],
         'education'
-    ).pivot(
-            index="neighb_code", columns='education', values='count'
     )
+    mapping = {
+        '0-14': 'education_primary_no'
+    }
+    df_education_marginal['education'] = df_education_marginal['education'].replace(mapping)
+    df_education_marginal = df_education_marginal.groupby(
+        ['neighb_code', 'education'], 
+        as_index=False
+    )['count'].sum()
 
-    children = df_education_marginal.population - df_education_marginal.education_primary_no - df_education_marginal.education_secondary - df_education_marginal.education_higher - df_education_marginal.education_undefined
-    df_education_marginal['education_primary_no'] = df_education_marginal['education_primary_no'] + children
-    # df_education_marginal.loc[:, ["education_primary_no"]] = children
 
-    df_education_marginal = df_education_marginal.drop("population", axis=1).reset_index()
+    # df_education_marginal = read_marginal_data(
+    #     ['education_primary_no', 'education_secondary', 'education_higher', 'education_undefined', 'population'],
+    #     'education'
+    # ).pivot(
+    #         index="neighb_code", columns='education', values='count'
+    # )
 
-    df_education_marginal = pd.melt(
-            df_education_marginal,
-            id_vars=["neighb_code"],
-            value_vars=["education_primary_no", "education_secondary", "education_higher", "education_undefined"],
-            value_name="count",
-            var_name="education"
-    )
+    # children = df_education_marginal.population - df_education_marginal.education_primary_no - df_education_marginal.education_secondary - df_education_marginal.education_higher - df_education_marginal.education_undefined
+    # df_education_marginal['education_primary_no'] = df_education_marginal['education_primary_no'] + children
+    # # df_education_marginal.loc[:, ["education_primary_no"]] = children
+
+    # df_education_marginal = df_education_marginal.drop("population", axis=1).reset_index()
+
+    # df_education_marginal = pd.melt(
+    #         df_education_marginal,
+    #         id_vars=["neighb_code"],
+    #         value_vars=["education_primary_no", "education_secondary", "education_higher", "education_undefined"],
+    #         value_name="count",
+    #         var_name="education"
+    # )
 
     return df_education_marginal
 
@@ -103,17 +119,52 @@ def fit_specific_education(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
 
     margins_gender = synthetic_population_to_contingency(df_synth_pop, ["gender"])["count"]
     margins_age = synthetic_population_to_contingency(df_synth_pop, ["age_group"])["count"]
-    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group"])["count"]
     margins_coarse_edu = synthetic_population_to_contingency(df_synth_pop, ["education"])["count"]
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group", "education"])["count"]
     
-    # DŮLEŽITÉ: V seedu se sloupec jmenuje 'education_coarse', ale v populaci 'education'.
-    # IPFN potřebuje, aby se název indexu marginálie shodoval s názvem sloupce v seedu.
     margins_coarse_edu.index.name = 'education_coarse'
+    ages = df_synth_pop['age_group'].unique()
+    genders = df_synth_pop['gender'].unique()
+    educations_coarse = df_synth_pop['education'].unique()
+    educations = df_seed['education_specific'].unique()
+
+    # === 1. OPRAVA INDEXŮ PRO IPFN ===
+    # V populaci se to jmenuje 'education', ale pro IPFN (v seedu) to potřebujeme jako 'education_coarse'
+    margins_gender_age.index.names = ["gender", "age_group", "education_coarse"]
+    margins_coarse_edu.index.name = 'education_coarse'
+    
+    kompletni_index_marginal = pd.MultiIndex.from_product(
+        [genders, ages, educations_coarse], 
+        names=["gender", "age_group", "education_coarse"]
+    )
+    margins_gender_age = margins_gender_age.reindex(kompletni_index_marginal, fill_value=0)
+
+    # === 2. OPRAVA NAFUKOVACÍ MATICE A MERGE ===
+    vsechny_kombinace = list(itertools.product(ages, genders, educations_coarse, educations))
+    
+    # Tady musíme použít 'education_coarse', aby to sedělo se zbytkem
+    df_vsechny = pd.DataFrame(vsechny_kombinace, columns=['age_group', 'gender', 'education_coarse', 'education_specific'])
+
+    # Mergujeme s df_seed (protože ten jde do IPFN), a používáme 'education_coarse'
+    df_seed = pd.merge(df_vsechny, df_seed, on=['age_group', 'gender', 'education_coarse', 'education_specific'], how='left')
+    df_seed['count'] = df_seed['count'].fillna(0.000000000001)
+    df_seed["count"] = df_seed["count"].astype(float)
+    
+    # Seskupíme, aby to bylo krásně čisté
+    df_seed = df_seed.groupby(['age_group', 'gender', 'education_coarse', 'education_specific'])['count'].sum().reset_index()
+    # ============================================
+
+    # df_fitted = ipfn.ipfn(
+    #         df_seed.copy().astype({'count': 'float'}),
+    #         aggregates=[margins_gender, margins_age, margins_gender_age, margins_coarse_edu],
+    #         dimensions=[['gender'], ['age_group'], ['gender', 'age_group', 'education_coarse'], ['education_coarse']],
+    #         weight_col='count'
+    # ).iteration()
 
     df_fitted = ipfn.ipfn(
             df_seed.copy().astype({'count': 'float'}),
             aggregates=[margins_gender, margins_age, margins_gender_age, margins_coarse_edu],
-            dimensions=[['gender'], ['age_group'], ['gender', 'age_group'], ['education_coarse']],
+            dimensions=[['gender'], ['age_group'], ['gender', 'age_group', 'education_coarse'], ['education_coarse']],
             weight_col='count'
     ).iteration()
 
@@ -121,7 +172,7 @@ def fit_specific_education(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     
     validate_fitted_distribution(df_fitted, margins_age, "age_group", name)
     validate_fitted_distribution(df_fitted, margins_gender, "gender", name)
-    validate_fitted_distribution(df_fitted, margins_gender_age, ['gender', 'age_group'], name)
+    validate_fitted_distribution(df_fitted, margins_gender_age, ['gender', 'age_group', 'education_coarse'], name)
     validate_fitted_distribution(df_fitted, margins_coarse_edu, 'education_coarse', name)
 
     return df_fitted
