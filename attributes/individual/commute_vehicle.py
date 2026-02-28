@@ -12,7 +12,7 @@ from gensynthpop.utils.extractors import synthetic_population_to_contingency
 def read_vehicle_activity() -> pd.DataFrame:
     data_path = os.path.join(
             os.path.dirname(__file__),
-            '../../datasources/individual/commute/dopravni_prostredek.csv'
+            '../../datasources/individual/commute/dopravni_prostredek_1.csv'
     )
     df = pd.read_csv(data_path, sep=";")
     df = df.rename(columns={"vekova_skupina": "age_group", "pohlavi":"gender", "dopravni_prostredek_hlavni":"vehicle_activity"})
@@ -24,12 +24,13 @@ def read_vehicle_activity() -> pd.DataFrame:
 
 
 def fit_vehicle_activity(df_synth_pop) -> pd.DataFrame:
-    df = read_vehicle_activity().groupby(['age_group', 'gender', 'ea_school_work_2', 'vehicle_activity'])['count'].sum().reset_index()
+    df = read_vehicle_activity().groupby(['age_group', 'gender', 'ea_school_work_2', 'category_place_activity', 'vehicle_activity'])['count'].sum().reset_index()
 
     margins_gender = read_marginal_data(['male', 'female'], 'gender').groupby('gender')['count'].sum()
     margins_age = read_marginal_data(age_groups, 'age_group').groupby('age_group')['count'].sum()
     margins_ea_school_work_2 = synthetic_population_to_contingency(df_synth_pop, ["ea_school_work_2"])["count"]
-    margins_gender_age_activity_type = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group", "ea_school_work_2"])["count"]
+    margins_category_place_activity = synthetic_population_to_contingency(df_synth_pop, ['category_place_activity'])['count']
+    margins_gender_age_activity_category_type = synthetic_population_to_contingency(df_synth_pop, ["gender", "age_group", "ea_school_work_2", 'category_place_activity'])["count"]
     
     margins_activity = read_df_activity_vehicle_marginal().groupby('vehicle_activity')['count'].sum()
 
@@ -37,31 +38,34 @@ def fit_vehicle_activity(df_synth_pop) -> pd.DataFrame:
     ages = df['age_group'].unique()
     genders = df['gender'].unique()
     activities = df['ea_school_work_2'].unique()
-    frequencies = df['vehicle_activity'].unique()
+    categories_place_activity = df['category_place_activity'].unique()
+    vehicles = df['vehicle_activity'].unique()
 
     # === 2. NAFOUKNUTÍ MARGINÁLŮ (aby neházel KeyError) ===
     # Vytvoříme index se všemi kombinacemi a ty chybějící vyplníme 0.001
     kompletni_index_marginal = pd.MultiIndex.from_product(
-        [genders, ages, activities], 
-        names=["gender", "age_group", "ea_school_work_2"]
+        [genders, ages, activities, categories_place_activity], 
+        names=["gender", "age_group", "ea_school_work_2", "category_place_activity"]
     )
-    margins_gender_age_activity_type = margins_gender_age_activity_type.reindex(kompletni_index_marginal, fill_value=0)
+    margins_gender_age_activity_category_type = margins_gender_age_activity_category_type.reindex(kompletni_index_marginal, fill_value=0)
     # =======================================================
 
     # === 3. NAFOUKNUTÍ SEED MATICE (aby neházel KeyError u df) ===
-    vsechny_kombinace = list(itertools.product(ages, genders, activities, frequencies))
-    df_vsechny = pd.DataFrame(vsechny_kombinace, columns=['age_group', 'gender', 'ea_school_work_2', 'vehicle_activity'])
+    vsechny_kombinace = list(itertools.product(ages, genders, activities, categories_place_activity, vehicles))
+    df_vsechny = pd.DataFrame(vsechny_kombinace, columns=['age_group', 'gender', 'ea_school_work_2', 'category_place_activity', 'vehicle_activity'])
 
-    df = pd.merge(df_vsechny, df, on=['age_group', 'gender', 'ea_school_work_2', 'vehicle_activity'], how='left')
+    df = pd.merge(df_vsechny, df, on=['age_group', 'gender', 'ea_school_work_2', 'category_place_activity', 'vehicle_activity'], how='left')
     df['count'] = df['count'].fillna(0.000000000001)
+    maska_nesmysl = (df['category_place_activity'] == 'not_moving') & (df['vehicle_activity'] != 'not_moving')
+    df.loc[maska_nesmysl, 'count'] = 0
     df["count"] = df["count"].astype(float)
-    df = df.groupby(['age_group', 'gender', 'ea_school_work_2', 'vehicle_activity'])['count'].sum().reset_index()
+    df = df.groupby(['age_group', 'gender', 'ea_school_work_2', 'category_place_activity', 'vehicle_activity'])['count'].sum().reset_index()
     print(df.to_string())
     # =======================================================
     df_fitted = ipfn.ipfn(
             df.copy().astype({'count': 'float'}),
-            aggregates=[margins_age, margins_gender, margins_ea_school_work_2, margins_activity, margins_gender_age_activity_type],
-            dimensions=[['age_group'], ['gender'], ['ea_school_work_2'], ['vehicle_activity'], ['gender','age_group', 'ea_school_work_2']],
+            aggregates=[margins_age, margins_gender, margins_ea_school_work_2, margins_category_place_activity, margins_activity, margins_gender_age_activity_category_type],
+            dimensions=[['age_group'], ['gender'], ['ea_school_work_2'], ['category_place_activity'], ['vehicle_activity'], ['gender','age_group', 'ea_school_work_2', 'category_place_activity']],
             weight_col='count'
     ).iteration()
     
@@ -69,8 +73,9 @@ def fit_vehicle_activity(df_synth_pop) -> pd.DataFrame:
     validate_fitted_distribution(df_fitted, margins_age, "age_group", name)
     validate_fitted_distribution(df_fitted, margins_gender, "gender", name)
     validate_fitted_distribution(df_fitted, margins_ea_school_work_2, 'ea_school_work_2', name)
+    validate_fitted_distribution(df_fitted, margins_category_place_activity, 'category_place_activity', name)
     validate_fitted_distribution(df_fitted, margins_activity, 'vehicle_activity', name)
-    validate_fitted_distribution(df_fitted, margins_gender_age_activity_type, ['gender', 'age_group', 'ea_school_work_2'], name)
+    validate_fitted_distribution(df_fitted, margins_gender_age_activity_category_type, ['gender', 'age_group', 'ea_school_work_2'], name)
 
     return df_fitted
 

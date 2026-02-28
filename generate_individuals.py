@@ -542,6 +542,63 @@ def add_ea_for_travelling(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
 
     return df_synth_pop
 
+# def add_commute_destination_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     Adds commute destination conditioned on age group, ea_school_work and gender.
+#     Age group, ea_school_work and gender have already been added to the synthetic population.
+#     """
+#     # === 1. ROZDĚLENÍ POPULACE ===
+#     # Neaktivní (ti, co mají ea_school_work == 'not_moving')
+#     maska_neaktivni = df_synth_pop['ea_school_work'] == 'not_moving'
+#     df_neaktivni = df_synth_pop[maska_neaktivni].copy().reset_index(drop=True)
+    
+#     # Aktivní (pracující a studenti) - TADY BUDE IPFN
+#     df_aktivni = df_synth_pop[~maska_neaktivni].copy().reset_index(drop=True)
+#     # =============================
+
+
+#     # === 2. TVRDÉ PŘIŘAZENÍ PRO NEAKTIVNÍ ===
+#     # Těch ~131 tisíc důchodců vyřešíme jedním řádkem, do IPFN vůbec nejdou
+#     df_neaktivni['place_activity'] = 'not_moving'
+#     # ========================================
+
+
+#     # === 3. IPFN POUZE PRO AKTIVNÍ (Pracující a studenti) ===
+#     # Dynamické marginály počítáme POUZE z aktivní populace (aby seděly součty!)
+#     df_contingency = fit_place_activity(df_aktivni) 
+#     margins_gender = synthetic_population_to_contingency(df_aktivni, ["neighb_code", "gender"], True).reset_index()
+#     margins_age_group = synthetic_population_to_contingency(df_aktivni, ["neighb_code", "age_group"], True).reset_index()
+#     margins_ea_school_work = synthetic_population_to_contingency(df_aktivni, ["neighb_code", "ea_school_work"], True).reset_index()
+#     margins_gender_age = synthetic_population_to_contingency(df_aktivni, ["neighb_code", "gender", "age_group", "ea_school_work"], True).reset_index()   
+    
+#     # Načtení cílových míst (Tady NEFILTRUJEME 'not_moving', protože to je teď náš home-office!)
+#     margins_activity_place = read_df_activity_place_marginal()
+
+#     # Spuštění IPFN jen na aktivních lidech
+#     df_aktivni_vypocitane = ConditionalAttributeAdder(
+#             df_aktivni,
+#             df_contingency,
+#             "place_activity",
+#             ["neighb_code"]
+#     ).add_margins(
+#             [margins_gender,
+#              margins_age_group, 
+#              margins_activity_place,
+#              margins_ea_school_work,
+#              margins_gender_age],
+#             [["gender"], ["age_group"], ["place_activity"], ["ea_school_work"],
+#              ["gender", "age_group", "ea_school_work"]]
+#     ).run()
+#     # =================================
+
+
+#     # === 4. SPOJENÍ ZPĚT A VALIDACE ===
+#     df_komplet = pd.concat([df_aktivni_vypocitane, df_neaktivni], ignore_index=True)
+    
+#     validate_synthetic_population_fit(df_komplet, df_contingency, ["age_group", "gender", "ea_school_work", "place_activity"], "place_activity")
+
+#     return df_komplet
+
 def add_commute_destination_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
     """
     Adds commute destination conditioned on age group, ea_school_work and gender.
@@ -578,6 +635,15 @@ def add_commute_destination_conditionally(df_synth_pop: pd.DataFrame) -> pd.Data
     
     validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work", "place_activity"], "place_activity")
 
+    # adding atribute for frequency and vehicle
+
+    known_place = ['municipality', 'other_municipality', 'other_district', 'other_region', 'abroad'] 
+    not_moving = ['not_moving']
+    
+    df['category_place_activity'] = 'nezjištěno'
+    df.loc[df['place_activity'].isin(known_place), 'category_place_activity'] = 'known'
+    df.loc[df['place_activity'].isin(not_moving), 'category_place_activity'] = 'not_moving'
+    
     return df
 
 def add_commute_frequency_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
@@ -596,7 +662,8 @@ def add_commute_frequency_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFr
     margins_gender = read_marginal_data(['male', 'female'], 'gender')
     margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "age_group"], True).reset_index()
     margins_ea_school_work = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "ea_school_work"], True).reset_index()
-    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group", "ea_school_work"], True).reset_index()   
+    margins_category_place_activity = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "category_place_activity"], True).reset_index()
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group", "ea_school_work", "category_place_activity"], True).reset_index()   
     margins_activity_frequency = read_df_activity_frequency_marginal()
 
     df = ConditionalAttributeAdder(
@@ -609,12 +676,13 @@ def add_commute_frequency_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFr
              margins_age_group, 
              margins_activity_frequency,
              margins_ea_school_work,
+             margins_category_place_activity,
              margins_gender_age],
-            [["gender"], ["age_group"], ["frequency_activity"], ["ea_school_work"],
-             ["gender", "age_group", "ea_school_work"]]
+            [["gender"], ["age_group"], ["frequency_activity"], ["ea_school_work"], ['category_place_activity'],
+             ["gender", "age_group", "ea_school_work", "category_place_activity"]]
     ).run()
     
-    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work", "frequency_activity"], "frequency_activity")
+    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work", "category_place_activity", "frequency_activity"], "frequency_activity")
 
     return df
 
@@ -634,7 +702,8 @@ def add_commute_vehicle_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFram
     margins_gender = read_marginal_data(['male', 'female'], 'gender')
     margins_age_group = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "age_group"], True).reset_index()
     margins_ea_school_work_2 = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "ea_school_work_2"], True).reset_index()
-    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group", "ea_school_work_2"], True).reset_index()   
+    margins_category_place_activity = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "category_place_activity"], True).reset_index()
+    margins_gender_age = synthetic_population_to_contingency(df_synth_pop, ["neighb_code", "gender", "age_group", "ea_school_work_2", "category_place_activity"], True).reset_index()   
     margins_activity_vehicle = read_df_activity_vehicle_marginal()
 
     df = ConditionalAttributeAdder(
@@ -647,19 +716,20 @@ def add_commute_vehicle_conditionally(df_synth_pop: pd.DataFrame) -> pd.DataFram
              margins_age_group, 
              margins_activity_vehicle,
              margins_ea_school_work_2,
+             margins_category_place_activity,
              margins_gender_age],
-            [["gender"], ["age_group"], ["vehicle_activity"], ["ea_school_work_2"],
-             ["gender", "age_group", "ea_school_work_2"]]
+            [["gender"], ["age_group"], ["vehicle_activity"], ["ea_school_work_2"], ["category_place_activity"],
+             ["gender", "age_group", "ea_school_work_2", "category_place_activity"]]
     ).run()
     
-    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work_2", "vehicle_activity"], "vehicle_activity")
+    validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "ea_school_work_2", "category_place_activity", "vehicle_activity"], "vehicle_activity")
 
     return df
 
 
 
 if __name__ == "__main__":
-    delete_previous_results()
+    # delete_previous_results()
 
     df_synth_pop_iteration = perform_stage(1, instantiate_population)
 
@@ -670,7 +740,7 @@ if __name__ == "__main__":
         # add_migration_background,
         # add_absolved_education,
         add_absolved_education_conditionally,
-	add_specific_education_conditionally,
+	    add_specific_education_conditionally,
         add_economical_activity,
         add_ea_for_travelling,
         add_commute_destination_conditionally,
@@ -699,8 +769,9 @@ if __name__ == "__main__":
         lambda df: replace_value(df, 'ea_school_work', 'nezjištěno', ['economical_activity']),
         lambda df: replace_value(df, 'ea_school_work_2', 'nezjištěno', ['economical_activity', 'ea_school_work']),
         lambda df: replace_value(df, 'place_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work', 'neighb_code']),
-        lambda df: replace_value(df, 'frequency_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work', 'neighb_code', 'place_activity']),
-        lambda df: replace_value(df, 'vehicle_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work_2', 'neighb_code', 'place_activity', 'frequency_activity'])
+        lambda df: replace_value(df,'category_place_activity', 'nezjištěno', ['place_activity']), 
+        lambda df: replace_value(df, 'frequency_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work', 'neighb_code', 'category_place_activity']),
+        lambda df: replace_value(df, 'vehicle_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work_2', 'neighb_code', 'category_place_activity', 'frequency_activity'])
         
     ]
 
