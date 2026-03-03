@@ -6,7 +6,7 @@ import pandas as pd
 from attributes.delete_unknown import replace_value
 from attributes.individual.commute_frequency import fit_frequency_activity, read_df_activity_frequency_marginal
 from attributes.individual.commute_place import fit_place_activity, read_df_activity_place_marginal
-from attributes.individual.commute_vehicle import fit_vehicle_activity, read_df_activity_vehicle_marginal
+from attributes.individual.commute_vehicle import fit_vehicle_activity, read_df_activity_vehicle_marginal, driver_0_14
 from attributes.individual.drivers_license import (add_license_age_to_synthetic_population,
                                                    get_and_fit_car_driver_license,
                                                    get_and_fit_conditional_moped_license,
@@ -526,8 +526,6 @@ def add_economical_activity(df_synth_pop: pd.DataFrame) -> pd.DataFrame:
              ["gender", "age_group"]]
     ).run()
 
-    activity_0_14(df)
-
     validate_synthetic_population_fit(df, df_contingency, ["age_group", "gender", "economical_activity"], "economical_activity")
 
     return df
@@ -782,14 +780,16 @@ if __name__ == "__main__":
     attributes_to_correct = [
         lambda df: replace_value(df, 'education', 'education_undefined', ['gender', 'age_group', 'neighb_code']),
         lambda df: replace_value(df, 'economical_activity', 'economical_activity_undefined', ['gender', 'age_group', 'neighb_code']),
+        lambda df: activity_0_14(df),
         lambda df: replace_value(df, 'education_specific', 'nezjištěno', ['gender', 'age_group', 'neighb_code', 'education']),
         lambda df: replace_value(df, 'ea_school_work', 'nezjištěno', ['economical_activity']),
         lambda df: replace_value(df, 'ea_school_work_2', 'nezjištěno', ['economical_activity', 'ea_school_work']),
         lambda df: replace_value(df, 'place_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work', 'neighb_code']),
         lambda df: replace_value(df, 'category_place_activity', 'nezjištěno', ['place_activity']), 
-        lambda df: replace_value(df, 'frequency_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work', 'neighb_code', 'category_place_activity']),
-        lambda df: df.assign(vehicle_activity=df['vehicle_activity'].mask(df['frequency_activity'] == 'not_moving', 'not_moving')),
-        lambda df: replace_value(df, 'vehicle_activity', 'not_determined', ['frequency_activity'])
+        lambda df: replace_value(df, 'frequency_activity', 'not_determined', ['gender', 'age_group', 'category_place_activity', 'vehicle_activity']),
+        # lambda df: df.assign(vehicle_activity=df['vehicle_activity'].mask(df['frequency_activity'] == 'not_moving', 'not_moving')),
+        lambda df: replace_value(df, 'vehicle_activity', 'not_determined', ['gender', 'age_group', 'ea_school_work_2', 'category_place_activity', 'frequency_activity']),
+        lambda df: driver_0_14(df)
         
     ]
 

@@ -136,3 +136,55 @@ def read_df_activity_vehicle_marginal() -> pd.DataFrame:
     # (budeme to muset mergovat s age_group, ale to je v fit_place_activity — tam to można udělat lépe)
 
     return df_activity_vehicle_marginal
+
+def driver_0_14(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Přesune status 'driver' u dětí (0-14) na ty nejstarší v rámci stejné městské části a pohlaví.
+    Zabraňuje existenci malých dětí s atributem 'driver' vzájemným prohozením vozidel.
+    """
+    print("Opravuji dětské řidiče (0-14)...")
+    
+    # Maska pro všechny děti ve věku 0-14 let
+    mask_0_14 = df['age_group'] == '0-14'
+    if not mask_0_14.any():
+        return df
+    
+    # Seskupíme si děti podle městské části a pohlaví
+    for (neighb, gender), group in df[mask_0_14].groupby(['neighb_code', 'gender']):
+        drivers_mask = group['vehicle_activity'] == 'driver'
+        num_drivers = drivers_mask.sum()
+        
+        # Pokud v této skupině nejsou žádní dětští řidiči, jdeme v klidu dál
+        if num_drivers == 0:
+            continue
+            
+        # Seřadíme děti v této konkrétní skupině podle věku SESTUPNĚ (od 14 do 0)
+        sorted_group = group.sort_values(by='age', ascending=False)
+        
+        # Indexy dětí, které by měly řídit (top X těch úplně nejstarších)
+        should_be_drivers_idx = sorted_group.head(num_drivers).index
+        
+        # Indexy dětí, které AKTUÁLNĚ řídí (včetně případných batolat)
+        current_drivers_idx = group[drivers_mask].index
+        
+        # Najdeme ty, u kterých musíme provést výměnu
+        # 1. Mladí, co mají 'driver', ale měli by mít něco jiného
+        young_drivers_idx = current_drivers_idx.difference(should_be_drivers_idx)
+        # 2. Staří, co 'driver' nemají, ale měli by ho dostat místo těch mladých
+        old_non_drivers_idx = should_be_drivers_idx.difference(current_drivers_idx)
+        
+        # Pokud není koho měnit (všichni řidiči už jsou ti nejstarší), jdeme dál
+        if len(young_drivers_idx) == 0:
+            continue 
+            
+        # === VZÁJEMNÉ PROHOZENÍ ===
+        # Zjistíme, čím původně cestovali ti starší (např. bus, spolujezdec, kolo)
+        old_non_drivers_vehicles = df.loc[old_non_drivers_idx, 'vehicle_activity'].values
+        
+        # Tuto vlastnost dáme mladým (sebereme jim 'driver' a dáme jim ten bus/kolo)
+        df.loc[young_drivers_idx, 'vehicle_activity'] = old_non_drivers_vehicles
+        
+        # Starším naopak natvrdo přiřadíme 'driver'
+        df.loc[old_non_drivers_idx, 'vehicle_activity'] = 'driver'
+        
+    return df
