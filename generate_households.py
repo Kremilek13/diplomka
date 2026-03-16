@@ -12,7 +12,7 @@ from attributes.household.post_code import read_pc6_data
 from attributes.household.vehicle_ownership import fit_vehicle_ownership_for_type, get_vehicle_ownership_dimensions
 from gensynthpop.conditional_attribute_adder import ConditionalAttributeAdder
 from gensynthpop.evaluation.validation import validate_synthetic_population_fit
-from gensynthpop.household_grouper import HouseholdGrouper, HouseholdType
+from attributes.household.household_grouper import HouseholdGrouper, HouseholdType
 from gensynthpop.utils.extractors import synthetic_population_to_contingency
 from reporting.household_reporting import create_household_score_table
 
@@ -471,11 +471,26 @@ def add_vehicle_ownership(
 
     return df_synth_pop, df
 
+    
+def delete_previous_results():
+    output_folder = [
+                        'output/synthetic_population/with_households/households/',
+                        'output/synthetic_population/with_households/individuals/', 
+                        # 'output/distributions/'
+                        ]
+    for output_folder in output_folder:
+        for file in os.listdir(output_folder):
+                # if file.startswith("synth_pop_DHWZ_v"):
+                os.remove(os.path.join(output_folder, file))
+        print(f"Deleted previous results in {output_folder}")
+    os.remove('biogap_report.log')
+
 
 if __name__ == "__main__":
     # Start from the individual attribute population generated with `gensynthpop_dhwz.py`, which has 11 iterations
-    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v8.pkl')
+    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v23.pkl')
     df_synth_household_iteration = None
+    delete_previous_results()
 
     stages = [
         partition_households,

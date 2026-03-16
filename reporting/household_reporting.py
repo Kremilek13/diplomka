@@ -21,10 +21,10 @@ def create_household_score_table(df_synth_pop: pd.DataFrame, df_synth_households
 
     household_rows = [
         score_3_type_households,
-        score_postal_code,
-        score_income_group,
-        score_car_ownership,
-        score_motor_cycle_ownership
+        # score_postal_code,
+        # score_income_group,
+        # score_car_ownership,
+        # score_motor_cycle_ownership
     ]
 
     create_score_table(df_synth_households, household_rows,

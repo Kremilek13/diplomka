@@ -68,6 +68,495 @@ vyřešeno 2.2.
     problém---not_moving - natvrdo - splitnout přiřadit a mergnout - asi i vyhodit z podminujicich tabulek
 
 
+4. grouper
+    def match_adults_with_children(self, parents: list[list[tuple[str, int, str]]], children: list[list[str]],
+                                   id_offset: int) -> int:
+        import warnings
+
+        # --- POMOCNÉ FUNKCE PRO HODNOCENÍ A OPTIMALIZACI ---
+        
+        def get_c_ages(c_cluster):
+            """Získá věky všech dětí v daném sourozeneckém balíčku."""
+            return [self.df_synth_pop.loc[c].age.max() for c in c_cluster]
+
+        def score_household(p_ages, c_ages):
+            """
+            Hodnotí biologický fit JEDNÉ rodiny. 
+            Vrací 0 = perfektní. Vrací > 0 = trestné body (čím víc, tím horší nesmysl).
+            Všechny děti (i dospělé) se řídí stejným pravidlem.
+            """
+            if not c_ages: return 0
+            max_c = max(c_ages)
+            min_c = min(c_ages)
+            
+            best_penalty = float('inf')
+            for p_age in p_ages:
+                gap_oldest = p_age - max_c
+                gap_youngest = p_age - min_c
+                
+                # Biologický limit (rozdíl k alespoň jednomu rodiči musí být 12 až 60 let)
+                if 12 <= gap_oldest and gap_youngest <= 60:
+                    return 0
+                    
+                penalty = 0
+                if gap_oldest < 12: penalty += (12 - gap_oldest) * 10
+                if gap_youngest > 60: penalty += (gap_youngest - 60) * 10
+                if penalty < best_penalty: best_penalty = penalty
+                
+            return best_penalty
+
+        def find_improving_swap_chain(households, max_depth=4):
+            """
+            Hloubkové prohledávání (k-opt heuristika). 
+            Zkouší řetězce prohození až do hloubky 4, aby unikl z lokálního minima.
+            """
+            current_scores = [score_household(hh['parent']['ages'], get_c_ages(hh['child'])) for hh in households]
+            total_baseline_score = sum(current_scores)
+            
+            if total_baseline_score == 0:
+                return False # Už je to dokonalé, nemáme co zlepšovat
+
+            def dfs_swap(current_hhs, depth, current_score):
+                if depth > max_depth: return None
+                
+                scores = [score_household(hh['parent']['ages'], get_c_ages(hh['child'])) for hh in current_hhs]
+                if max(scores) == 0: return current_hhs
+                
+                bad_idx = scores.index(max(scores)) # Prohazujeme VŽDY jen od té nejhorší rodiny
+                
+                for other_idx in range(len(current_hhs)):
+                    if bad_idx == other_idx: continue
+                    # Prohazovat lze jen stejně velké balíčky (aby seděl typ domácnosti)
+                    if len(current_hhs[bad_idx]['child']) != len(current_hhs[other_idx]['child']): continue
+                        
+                    # Rychlá virtuální kopie stavu
+                    test_hhs = [{'parent': hh['parent'], 'child': hh['child']} for hh in current_hhs]
+                    
+                    # PROHOZENÍ DĚTÍ
+                    test_hhs[bad_idx]['child'], test_hhs[other_idx]['child'] = test_hhs[other_idx]['child'], test_hhs[bad_idx]['child']
+                    
+                    new_scores = [score_household(hh['parent']['ages'], get_c_ages(hh['child'])) for hh in test_hhs]
+                    new_total = sum(new_scores)
+                    
+                    if new_total < total_baseline_score:
+                        return test_hhs # Bingo! Našli jsme lepší stav!
+                        
+                    # Zanoření (lokální minimum: i když se to zhoršilo, zkusíme prohodit ještě něco)
+                    if depth < max_depth:
+                        deeper_result = dfs_swap(test_hhs, depth + 1, new_total)
+                        if deeper_result is not None:
+                            return deeper_result
+                return None
+
+            best_new_state = dfs_swap(households, depth=1, current_score=total_baseline_score)
+            
+            if best_new_state is not None:
+                for i in range(len(households)):
+                    households[i]['child'] = best_new_state[i]['child']
+                return True
+            return False
+
+        # =========================================================
+        # FÁZE 1: PŘÍPRAVA DAT A PRVOTNÍ GREEDY PŘIŘAZENÍ
+        # =========================================================unmatched_children = list(children)
+        unmatched_parents = [{'idx': i, 'p_cluster': p, 'ages': [a[1] for a in p]} for i, p in enumerate(parents)]
+        matched_households = []
+
+        # Náhodné zamíchání, abychom zamezili umělému předsudku (bias)
+        random.shuffle(unmatched_children)
+        random.shuffle(unmatched_parents)
+        
+        # =========================================================
+        # KOLO 1: ZLATÝ STANDARD (Oba rodiče 18-45 let od dětí)
+        # =========================================================
+        remaining_children_kolo1 = []
+        for c_cluster in unmatched_children:
+            c_ages = get_c_ages(c_cluster)
+            max_c, min_c = max(c_ages), min(c_ages)
+            
+            best_p_idx = -1
+            best_diff = float('inf')
+            
+            for i, p_info in enumerate(unmatched_parents):
+                p_ages = p_info['ages']
+                
+                # Kontrola: OBA dospělí musí mít k oběma extrémům dětí rozdíl 18 až 45 let
+                if all(18 <= (p_age - max_c) and (p_age - min_c) <= 45 for p_age in p_ages):
+                    # Ideál: Věk rodičů je co nejblíž 30 let od nejstaršího dítěte
+                    diff = sum([abs((p_age - max_c) - 30) for p_age in p_ages])
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_p_idx = i
+                        
+            if best_p_idx != -1:
+                matched_households.append({'parent': unmatched_parents.pop(best_p_idx), 'child': c_cluster})
+            else:
+                remaining_children_kolo1.append(c_cluster)
+
+        # =========================================================
+        # KOLO 2: ŠIRŠÍ KOMPROMIS (Oba rodiče 12-65 let od dětí)
+        # =========================================================
+        remaining_children_kolo2 = []
+        for c_cluster in remaining_children_kolo1:
+            c_ages = get_c_ages(c_cluster)
+            max_c, min_c = max(c_ages), min(c_ages)
+            best_p_idx = -1
+            
+            for i, p_info in enumerate(unmatched_parents):
+                p_ages = p_info['ages']
+                
+                # Kontrola: OBA dospělí musí být v uvolněném limitu 12 až 65 let
+                if all(12 <= (p_age - max_c) and (p_age - min_c) <= 65 for p_age in p_ages):
+                    best_p_idx = i
+                    break # Tady už nehledáme ideál, bereme prvního, kdo splní kompromis
+                    
+            if best_p_idx != -1:
+                matched_households.append({'parent': unmatched_parents.pop(best_p_idx), 'child': c_cluster})
+            else:
+                remaining_children_kolo2.append(c_cluster)
+
+        # =========================================================
+        # KOLO 3: NEVLASTNÍ RODIČE (Alespoň jeden rodič 12-60 let)
+        # =========================================================
+        remaining_children_kolo3 = []
+        for c_cluster in remaining_children_kolo2:
+            c_ages = get_c_ages(c_cluster)
+            max_c, min_c = max(c_ages), min(c_ages)
+            best_p_idx = -1
+            
+            for i, p_info in enumerate(unmatched_parents):
+                p_ages = p_info['ages']
+                
+                # Kontrola: ALESPOŇ JEDEN dospělý se musí vejít do limitu 12 až 60 let
+                if any(12 <= (p_age - max_c) and (p_age - min_c) <= 60 for p_age in p_ages):
+                    best_p_idx = i
+                    break
+                    
+            if best_p_idx != -1:
+                matched_households.append({'parent': unmatched_parents.pop(best_p_idx), 'child': c_cluster})
+            else:
+                remaining_children_kolo3.append(c_cluster)
+
+        # =========================================================
+        # KOLO 4: ZÁCHRANNÁ BRZDA (Zbytky, co propadly koly 1-3)
+        # =========================================================
+        # Seřadíme, co zbylo (aby alespoň staré děti dostaly staré rodiče)
+        remaining_children_kolo3.sort(key=lambda c: max(get_c_ages(c)))
+        unmatched_parents.sort(key=lambda p: min(p['ages']))
+        
+        for c_cluster in remaining_children_kolo3:
+            if not unmatched_parents: break
+            matched_households.append({'parent': unmatched_parents.pop(0), 'child': c_cluster})
+            
+        # Nyní nastupuje FÁZE 3 (Tvoje optimalizace / Prohazování)...
+
+        # =========================================================
+        # FÁZE 3: TVOJE HLOUBKOVÁ OPTIMALIZACE (LOOK-AHEAD SWAPPING)
+        # =========================================================
+        improved = True
+        cycles = 0
+        # Točíme optimalizaci, dokud nachází úniky z lokálních minim (pojistka max 15 cyklů)
+        while improved and cycles < 30:
+            improved = find_improving_swap_chain(matched_households, max_depth=4)
+            cycles += 1
+
+        # =========================================================
+        # FÁZE 4: ZÁPIS DO DATABÁZE A REPORTING
+        # =========================================================
+        for hh in matched_households:
+            p_cluster = hh['parent']['p_cluster']
+            c_cluster = hh['child']
+            c_ages = get_c_ages(c_cluster)
+            p_ages = hh['parent']['ages']
+            
+            # Finální kontrola, jestli optimalizace selhala kvůli absolutně špatným IPFN datům
+            if score_household(p_ages, c_ages) > 0:
+                warnings.warn(f"Datový extrém: Biologický fit nelze opravit ani optimalizací. Rodiče: {p_ages}, Děti: {c_ages}.")
+                
+            household_members = [p[0] for p in p_cluster] + c_cluster
+            self.create_household_with_id(self.get_position_for_name('child'), id_offset, household_members)
+            
+            print(f"Matched parent ages {p_ages} to children ages {c_ages}")
+            id_offset += 1
+
+        # Vytvoření domácností pro dospělé, na které už děti nevyšly
+        if unmatched_parents:
+            warnings.warn(f"Zbylo {len(unmatched_parents)} párů/dospělých bez přiřazených dětí.")
+            for p_info in unmatched_parents:
+                self.create_household_with_id(self.get_position_for_name('adult'), id_offset, [p[0] for p in p_info['p_cluster']])
+                id_offset += 1
+
+        return id_offset
+
+
+
+3. grouper - děti starší než oba rodiče
+
+def match_adults_with_children(self, parents: list[list[tuple[str, int, str]]], children: list[list[str]],
+                                   id_offset: int) -> int:
+        """
+        Attempts to match adult-clusters with child-clusters.
+        Combines statistical suitability with smart fallbacks for edge-cases.
+        """
+        parent_ages = list()
+        if self.get_position_for_name('adult')['amount'] == 2:
+            for p1, p2 in parents:
+                # 1. ZMĚNA: Eliminace předsudku. Vždy bereme mladšího z partnerů!
+                # Řeší to situace jako 77letý muž a 90letá žena -> pro dítě se počítá věk 77.
+                parent_ages.append(min(p1[1], p2[1]))
+        else:
+            parent_ages = [p[0][1] for p in parents]
+
+        parent_ages = pd.DataFrame(dict(age=parent_ages))
+        parent_msk = parent_ages.age.transform(lambda _: True)
+
+        # 2. ZMĚNA: Žádná náhoda. Řadíme děti od nejmladšího po nejstaršího.
+        # Malé děti půjdou na řadu první a rozeberou si mladší rodiče.
+        children_with_ages = [(child, self.df_synth_pop.loc[child].age.max()) for child in children]
+        children_with_ages.sort(key=lambda x: x[1])
+
+        age_mother = _calculate_group_counts(self.parent_child_age_distribution, len(children))
+        
+        child_offset = 0
+        for age_gap, count in sorted(age_mother.items()):
+            gap_start, gap_end = map(int, str(age_gap).split("-"))
+            for _ in range(count):
+                if child_offset >= len(children_with_ages):
+                    break
+                
+                siblings, child_age = children_with_ages[child_offset]
+                parent_candidates = parent_ages.loc[parent_msk, ['age']].copy()
+
+                if parent_candidates.empty:
+                    break
+
+                # 3. ZMĚNA: Návrat k původní (a lepší) statistické kuchařce.
+                # Každý rodič dostane "trestné body", pokud nezapadá do ideálního věkového okna.
+                parent_candidates.loc[:, 'suitability'] = parent_candidates.age.transform(
+                        lambda x: score_suitability_by_age_disparity(x, gap_start + child_age, gap_end + child_age,
+                                                                     strict_lower_bound=child_age + 12)
+                )
+                parent_candidates = parent_candidates.sort_values(by='suitability', ascending=True)
+
+                best_candidate_idx = parent_candidates.index[0]
+                best_candidate_age = parent_candidates.loc[best_candidate_idx, 'age']
+
+                # 4. ZMĚNA: Tvoje záchranná brzda (místo pádu programu nebo absurdních rodin)
+                # Pokud je nejlepší možný rodič pořád biologický nesmysl (rozdíl < 12 let nebo > 60 let)
+                if (best_candidate_age - child_age < 12) or (best_candidate_age - child_age > 60):
+                    
+                    # Aplikujeme TVOJE pravidlo na úplně všechny ZBÝVAJÍCÍ rodiče
+                    parents_by_age = parent_candidates.sort_values(by='age')
+                    
+                    if child_age >= 15:
+                        # Starší děti dostanou toho úplně nejstaršího ze zbytků
+                        parent_idx = parents_by_age.index[-1]
+                    else:
+                        # Malé děti dostanou toho nejmladšího možného ze zbytků
+                        parent_idx = parents_by_age.index[0]
+                        
+                    final_age = parent_ages.loc[parent_idx, 'age']
+                    warnings.warn(f"Statisticky ideální rodič nenalezen pro dítě (věk {child_age}). "
+                                  f"Aplikováno pravidlo věkové shody -> přiřazen rodič s věkem {final_age}.")
+                else:
+                    # Jinak vše proběhlo hladce podle statistiky
+                    parent_idx = best_candidate_idx
+
+                parent_msk &= parent_ages.index != parent_idx
+                parent = parents[parent_idx]
+                
+                household = [p[0] for p in parent] + [c for c in siblings]
+                self.create_household_with_id(self.get_position_for_name('child'), id_offset, household)
+                
+                print(f"parent_age={parent_ages.loc[parent_idx, 'age']}, child_age={child_age} "
+                      f"Matched parent {parent} to {children[child_offset]} with (oldest) age {child_age}")
+                
+                id_offset += 1
+                child_offset += 1
+
+        if parent_msk.sum() > 0:
+            warnings.warn(f"Creating {parent_msk.sum()} couples without children")
+            for parent_idx in parent_ages.loc[parent_msk].index:
+                parent = parents[parent_idx]
+                self.create_household_with_id(self.get_position_for_name('adult'), id_offset,
+                                              [p[0] for p in parent])
+                print(f"Created HH with {parent}")
+                id_offset += 1
+
+        return id_offset
+
+2.grouper - zatím nic, ale nerespektovalo to předchozí logiku
+def match_adults_with_children(self, parents: list[list[tuple[str, int, str]]], children: list[list[str]],
+                                   id_offset: int) -> int:
+        """
+        Attempts to match adult-clusters with child-clusters.
+        The current implementation supports only comparing by age.
+        Args:
+            parents:
+            children:
+            id_offset:
+
+        Returns:
+            Updated ID offset
+        """
+        age_mother = _calculate_group_counts(self.parent_child_age_distribution, len(children))
+
+        parent_ages = list()
+        if self.get_position_for_name('adult')['amount'] == 2:
+            for p1, p2 in parents:
+                if p1[2] == p2[2]:
+                    parent_ages.append(min(p1[1], p2[1]))
+                else:
+                    parent_ages.append(p1[1] if p1[2] == 'female' else p2[1])
+                    # parent_ages.append(p1[1] if p1[2] == 'female' else p2[1])
+        else:
+            parent_ages = [p[0][1] for p in parents]
+
+        parent_ages = pd.DataFrame(dict(age=parent_ages))
+        parent_msk = parent_ages.age.transform(lambda _: True)
+
+        children_with_ages = [(child, self.df_synth_pop.loc[child].age.max()) for child in children]
+        random.shuffle(children_with_ages)
+
+        age_mother = _calculate_group_counts(self.parent_child_age_distribution, len(children))
+        BIOLOGICAL_LIMIT = 59
+        child_offset = 0
+        # for age_gap, count in age_mother.items():
+        for age_gap, count in sorted(age_mother.items()):
+            # count = age_mother[age_gap]
+            gap_start, gap_end = map(int, str(age_gap).split("-"))
+            for _ in range(count):
+                if child_offset >= len(children_with_ages):
+                    break
+                siblings, child_age = children_with_ages[child_offset]
+
+                parent_candidates = parent_ages.loc[parent_msk, ['age']].copy()
+
+                if parent_candidates.empty:
+                    break
+
+                parent_candidates.loc[:, 'suitability'] = parent_candidates.age.transform(
+                        lambda x: score_suitability_by_age_disparity(x, gap_start + child_age, gap_end + child_age,
+                                                                     strict_lower_bound=child_age + 10)
+                )
+                parent_candidates = parent_candidates.sort_values(by='suitability', ascending=True)
+
+                parent_idx = None
+                for idx, candidate in parent_candidates.iterrows():
+                    p_age = candidate.age
+                    # Pokud nejlepší kandidát porušuje biologický limit, zkusíme dalšího v pořadí
+                    if (p_age - child_age) <= BIOLOGICAL_LIMIT:
+                        parent_idx = idx
+                        break
+                if parent_idx is None:
+                    parent_idx = parent_candidates.index[0]
+                    warnings.warn(f"Nepodařilo se najít ideálního rodiče pro věk dítěte {child_age}. "
+                                  f"Přiřazen věk {parent_ages.loc[parent_idx].age}")
+
+                # parent_idx = parent_candidates.iloc[0].name
+                parent_msk &= parent_ages.index != parent_idx
+                parent = parents[parent_idx]
+                parent_age = parent_ages.loc[parent_idx].age
+                # parent_age = parent_ages.loc[parent_idx].values[0]
+                # if parent_age - child_age < 10:
+                #     raise ValueError(
+                #             f"Child age gap too small: {parent_age} - {child_age} = {parent_age - child_age}")
+                household = [p[0] for p in parent] + [c for c in siblings]
+                self.create_household_with_id(self.get_position_for_name('child'), id_offset, household)
+                print(
+                        f"{parent_age=}, {child_age=} Matched parent {parent} to "
+                        f"{children[child_offset]} "
+                        f"with (oldest) age {child_age}")
+                id_offset += 1
+                child_offset += 1
+
+        if parent_msk.sum() > 0:
+            warnings.warn(f"Creating {parent_msk.sum()} couples without children")
+            for parent_idx in parent_ages.loc[parent_msk].index:
+                parent = parents[parent_idx]
+                self.create_household_with_id(self.get_position_for_name('adult'), id_offset,
+                                              [p[0] for p in parent])
+                print(f"Created HH with {parent}")
+                id_offset += 1
+
+        return id_offset
+    
+
+    1. grouper - novorozenci u seniorů nad hrobem
+        # def match_adults_with_children(self, parents: list[list[tuple[str, int, str]]], children: list[list[str]],
+        #                            id_offset: int) -> int:
+        # """
+        # Attempts to match adult-clusters with child-clusters.
+        # The current implementation supports only comparing by age.
+        # Args:
+        #     parents:
+        #     children:
+        #     id_offset:
+
+        # Returns:
+        #     Updated ID offset
+        # """
+        # age_mother = _calculate_group_counts(self.parent_child_age_distribution, len(children))
+
+        # parent_ages = list()
+        # if self.get_position_for_name('adult')['amount'] == 2:
+        #     for p1, p2 in parents:
+        #         if p1[2] == p2[2]:
+        #             parent_ages.append(min(p1[1], p2[1]))
+        #         else:
+        #             parent_ages.append(p1[1] if p1[2] == 'female' else p2[1])
+        # else:
+        #     parent_ages = [p[0][1] for p in parents]
+
+        # parent_ages = pd.DataFrame(dict(age=parent_ages))
+        # parent_msk = parent_ages.age.transform(lambda _: True)
+
+        # children_with_ages = sorted([(child, self.df_synth_pop.loc[child].age.max()) for child in children],
+        #                             key=lambda x: x[1], reverse=True)
+
+        # child_offset = 0
+        # # for age_gap, count in age_mother.items():
+        # for age_gap, count in sorted(age_mother.items()):
+        #     count = age_mother[age_gap]
+        #     gap_start, gap_end = map(int, str(age_gap).split("-"))
+        #     for _ in range(count):
+        #         siblings, child_age = children_with_ages[child_offset]
+
+        #         parent_candidates = parent_ages.loc[parent_msk, ['age']]
+        #         parent_candidates.loc[:, 'suitability'] = parent_candidates.age.transform(
+        #                 lambda x: score_suitability_by_age_disparity(x, gap_start + child_age, gap_end + child_age,
+        #                                                              strict_lower_bound=child_age + 12)
+        #         )
+        #         parent_candidates = parent_candidates.sort_values(by='suitability', ascending=True)
+        #         parent_idx = parent_candidates.iloc[0].name
+        #         parent_msk &= parent_ages.index != parent_idx
+        #         parent = parents[parent_idx]
+        #         parent_age = parent_ages.loc[parent_idx].values[0]
+        #         if parent_age - child_age < 12:
+        #             raise ValueError(
+        #                     f"Child age gap too small: {parent_age} - {child_age} = {parent_age - child_age}")
+        #         household = [p[0] for p in parent] + [c for c in siblings]
+        #         self.create_household_with_id(self.get_position_for_name('child'), id_offset, household)
+        #         print(
+        #                 f"{parent_age=}, {child_age=} Matched parent {parent} to "
+        #                 f"{children[child_offset]} "
+        #                 f"with (oldest) age {child_age}")
+        #         id_offset += 1
+        #         child_offset += 1
+
+        # if parent_msk.sum() > 0:
+        #     warnings.warn(f"Creating {parent_msk.sum()} couples without children")
+        #     for parent_idx in parent_ages.loc[parent_msk].index:
+        #         parent = parents[parent_idx]
+        #         self.create_household_with_id(self.get_position_for_name('adult'), id_offset,
+        #                                       [p[0] for p in parent])
+        #         print(f"Created HH with {parent}")
+        #         id_offset += 1
+
+        # return id_offset
+
+
+
 
         
         
