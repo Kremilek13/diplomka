@@ -4,6 +4,7 @@ from typing import Callable, Literal, Optional, Tuple
 
 import pandas as pd
 
+from attributes.household.building_floor import (add_building_floor_types, fit_building_floor, read_marginal_building_floor_data)
 from attributes.household.household_composition import (get_mother_age_disparity, read_couples_age_disparity,
                                                         read_couples_gender_disparity)
 from attributes.household.household_income import (add_household_type_and_income_age_group, fit_joint_household_income,
@@ -471,6 +472,60 @@ def add_vehicle_ownership(
 
     return df_synth_pop, df
 
+def add_building_and_floor(df_synth_pop: pd.DataFrame, df_synth_households: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Stage funkce pro přiřazení typu budovy a patra domácnostem.
+    """
+
+    # 1. Přidáme zjednodušené typy domácností (jednotlivec, par_s_detmi atd.)
+    # Tato funkce vytvoří nový sloupec 'typ_domacnosti_building'
+    df_synth_households = add_building_floor_types(df_synth_households)
+
+    # 2. Vytvoříme/Nafitujeme společnou distribuci (IPFN)
+    # Tato funkce vrátí tabulku pravděpodobností [building_floor, hh_size, hh_type, count]
+    df_contingency = fit_building_floor(df_synth_households)
+    margins_size = synthetic_population_to_contingency(df_synth_households, ["neighb_code","hh_size"], True).reset_index()
+    margins_hh_type = synthetic_population_to_contingency(df_synth_households, ["neighb_code", "typ_domacnosti_building"], True).reset_index()
+    margins_hh_type_size = synthetic_population_to_contingency(df_synth_households, ["neighb_code","typ_domacnosti_building", "hh_size"], True).reset_index()
+    margins_building_floor = read_marginal_building_floor_data().groupby(
+                'building_floor'
+        )["count"].sum().reset_index()
+    
+    df_contingency = df_contingency.reset_index()
+    if 'index' in df_contingency.columns:
+        df_contingency = df_contingency.drop(columns=['index'])
+
+    # 2. Sjednocení typů (KLÍČOVÉ pro spárování)
+    # Adder porovnává hodnoty v df_synth_households a df_contingency
+    for table in [df_synth_households, df_contingency]:
+        table['hh_size'] = table['hh_size'].astype(int)
+        table['typ_domacnosti_building'] = table['typ_domacnosti_building'].astype(str)
+
+    # 3. Přiřazení atributu pomocí ConditionalAttributeAdder
+    # Pozor: 'hh_type' v df_contingency musí odpovídat 'hh_type' v df_synth_households
+    df = ConditionalAttributeAdder(
+            df_synth_households,
+            df_contingency,
+            'building_floor', # Cílový sloupec, který chceme přidat
+            ['neighb_code'] 
+    ).add_margins(
+            [margins_hh_type, 
+             margins_size,
+             margins_building_floor,
+             margins_hh_type_size],
+            [["typ_domacnosti_building"], ["hh_size"], 
+             ["building_floor"], 
+             ["typ_domacnosti_building", "hh_size"]]
+    ).run()
+
+    # 4. Validace výsledku v okrscích (pokud máš v df_contingency i neighb_code)
+    validate_synthetic_population_fit(df, df_contingency, ["hh_size", "typ_domacnosti_building", "building_floor"], "building_floor")
+
+    # Úklid dočasného sloupce (volitelné)
+    df.drop(columns=['typ_domacnosti_building'], inplace=True)
+
+    return df_synth_pop, df
+
     
 def delete_previous_results():
     output_folder = [
@@ -488,15 +543,16 @@ def delete_previous_results():
 
 if __name__ == "__main__":
     # Start from the individual attribute population generated with `gensynthpop_dhwz.py`, which has 11 iterations
-    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v23.pkl')
+    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v24.pkl')
     df_synth_household_iteration = None
-    delete_previous_results()
+    # delete_previous_results()
 
     stages = [
         partition_households,
         correct_household_assignment,
         create_3_type_household_labels,
         reassign_individual_household_position,
+        add_building_and_floor,
         # add_postal_code,
         # add_income_household_type,
         # add_household_income,

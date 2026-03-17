@@ -143,6 +143,20 @@ marginal_data_code_map = {
     'vyj_auto_kolo': 'transport_bicycle',
     'vyj_auto_jiny': 'transport_other',
     'vyj_auto_zadny_pesky': 'transport_none_walking',
-    'vyj_dopr_nezjisteno': 'transport_undefined'
+    'vyj_dopr_nezjisteno': 'transport_undefined',
 
+    'hd_rd_celkem': 'hd_rd_celkem',
+    'hd_rd_1nadzem': 'hd_rd_1nadzem',
+    'hd_rd_2nadzem': 'hd_rd_2nadzem',
+    'hd_rd_3avicenadzem': 'hd_rd_3avicenadzem',
+    'hd_bd_celkem': 'hd_bd_celkem',
+    'hd_bd_1_2nadzem': 'hd_bd_1_2nadzem',
+    'hd_bd_3_4nadzem': 'hd_bd_3_4nadzem',
+    'hd_bd_5_6nadzem': 'hd_bd_5_6nadzem',
+    'hd_bd_7avicenadzem': 'hd_bd_7avicenadzem',
+    'hd_ostatni_domy_celkem': 'hd_ostatni_domy_celkem',
+    'hd_ostatni_1_2nadzem': 'hd_ostatni_1_2nadzem',
+    'hd_ostatni_3_4nadzem': 'hd_ostatni_3_4nadzem',
+    'hd_ostatni_5avice_nadzem': 'hd_ostatni_5avice_nadzem',
+    'hd_druhdomu_nezjisten': 'hd_druhdomu_nezjisten'
 }
