@@ -64,8 +64,8 @@ def read_df_education_marginal() -> pd.DataFrame:
     df_education_marginal['education'] = df_education_marginal['education'].replace(mapping)
     df_education_marginal = df_education_marginal.groupby(
         [
-            # 'neighb_code', 
-         'education'], 
+        'neighb_code', 
+        'education'], 
         as_index=False
     )['count'].sum()
 

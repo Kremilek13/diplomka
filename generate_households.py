@@ -543,9 +543,9 @@ def delete_previous_results():
 
 if __name__ == "__main__":
     # Start from the individual attribute population generated with `gensynthpop_dhwz.py`, which has 11 iterations
-    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v24.pkl')
+    df_synth_pop_iteration = pd.read_pickle('output/synthetic_population/individuals/synth_pop_DHWZ_v23.pkl')
     df_synth_household_iteration = None
-    # delete_previous_results()
+#     delete_previous_results()
 
     stages = [
         partition_households,

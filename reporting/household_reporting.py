@@ -21,6 +21,7 @@ def create_household_score_table(df_synth_pop: pd.DataFrame, df_synth_households
 
     household_rows = [
         score_3_type_households,
+        building_floor,
         # score_postal_code,
         # score_income_group,
         # score_car_ownership,
@@ -37,6 +38,16 @@ def score_3_type_households(df: pd.DataFrame) -> List[ComparisonTuple]:
     df_observed = synthetic_population_to_contingency(df, ['neighb_code', 'small_hh_type'], True)[['count']]
 
     return [(df_observed, df_expected, 'household type', 'neighborhood')]
+
+def building_floor(df: pd.DataFrame) -> List[ComparisonTuple]:
+    df_expected = read_marginal_data(['hd_rd_1nadzem', 'hd_rd_2nadzem', 'hd_rd_3avicenadzem',
+                                      'hd_bd_1_2nadzem', 'hd_bd_3_4nadzem', 'hd_bd_5_6nadzem','hd_bd_7avicenadzem',
+                                      'hd_ostatni_1_2nadzem', 'hd_ostatni_3_4nadzem', 'hd_ostatni_5avice_nadzem'
+                                      ], 'building_floor').set_index(
+            ['neighb_code', 'building_floor'])
+    df_observed = synthetic_population_to_contingency(df, ['neighb_code', 'building_floor'], True)[['count']]
+
+    return [(df_observed, df_expected, 'building floor', 'neighborhood')]
 
 
 def score_postal_code(df: pd.DataFrame) -> List[ComparisonTuple]:
