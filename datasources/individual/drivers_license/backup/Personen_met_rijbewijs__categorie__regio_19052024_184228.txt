@@ -1,0 +1,37 @@
+﻿"Rijbewijscategorie";"Leeftijd rijbewijshouder";"Perioden";"Regio's";"Personen met rijbewijs (aantal)"
+"Autorijbewijs totaal";"Totaal";"2019";"Zuid-Holland (PV)";2257342
+"Autorijbewijs totaal";"16 tot 18 jaar";"2019";"Zuid-Holland (PV)";3073
+"Autorijbewijs totaal";"18 tot 20 jaar";"2019";"Zuid-Holland (PV)";38179
+"Autorijbewijs totaal";"20 tot 25 jaar";"2019";"Zuid-Holland (PV)";156566
+"Autorijbewijs totaal";"25 tot 30 jaar";"2019";"Zuid-Holland (PV)";190462
+"Autorijbewijs totaal";"30 tot 40 jaar";"2019";"Zuid-Holland (PV)";385060
+"Autorijbewijs totaal";"40 tot 50 jaar";"2019";"Zuid-Holland (PV)";414751
+"Autorijbewijs totaal";"50 tot 60 jaar";"2019";"Zuid-Holland (PV)";441295
+"Autorijbewijs totaal";"60 tot 65 jaar";"2019";"Zuid-Holland (PV)";185359
+"Autorijbewijs totaal";"65 tot 70 jaar";"2019";"Zuid-Holland (PV)";160758
+"Autorijbewijs totaal";"70 tot 75 jaar";"2019";"Zuid-Holland (PV)";141613
+"Autorijbewijs totaal";"75 jaar of ouder";"2019";"Zuid-Holland (PV)";140226
+"Bromfietsrijbewijs";"Totaal";"2019";"Zuid-Holland (PV)";2305614
+"Bromfietsrijbewijs";"16 tot 18 jaar";"2019";"Zuid-Holland (PV)";11189
+"Bromfietsrijbewijs";"18 tot 20 jaar";"2019";"Zuid-Holland (PV)";41988
+"Bromfietsrijbewijs";"20 tot 25 jaar";"2019";"Zuid-Holland (PV)";159704
+"Bromfietsrijbewijs";"25 tot 30 jaar";"2019";"Zuid-Holland (PV)";193118
+"Bromfietsrijbewijs";"30 tot 40 jaar";"2019";"Zuid-Holland (PV)";387805
+"Bromfietsrijbewijs";"40 tot 50 jaar";"2019";"Zuid-Holland (PV)";420772
+"Bromfietsrijbewijs";"50 tot 60 jaar";"2019";"Zuid-Holland (PV)";449423
+"Bromfietsrijbewijs";"60 tot 65 jaar";"2019";"Zuid-Holland (PV)";189682
+"Bromfietsrijbewijs";"65 tot 70 jaar";"2019";"Zuid-Holland (PV)";164650
+"Bromfietsrijbewijs";"70 tot 75 jaar";"2019";"Zuid-Holland (PV)";143848
+"Bromfietsrijbewijs";"75 jaar of ouder";"2019";"Zuid-Holland (PV)";143435
+"Motorrijbewijs";"Totaal";"2019";"Zuid-Holland (PV)";250902
+"Motorrijbewijs";"16 tot 18 jaar";"2019";"Zuid-Holland (PV)";
+"Motorrijbewijs";"18 tot 20 jaar";"2019";"Zuid-Holland (PV)";147
+"Motorrijbewijs";"20 tot 25 jaar";"2019";"Zuid-Holland (PV)";4657
+"Motorrijbewijs";"25 tot 30 jaar";"2019";"Zuid-Holland (PV)";13677
+"Motorrijbewijs";"30 tot 40 jaar";"2019";"Zuid-Holland (PV)";34802
+"Motorrijbewijs";"40 tot 50 jaar";"2019";"Zuid-Holland (PV)";50069
+"Motorrijbewijs";"50 tot 60 jaar";"2019";"Zuid-Holland (PV)";71522
+"Motorrijbewijs";"60 tot 65 jaar";"2019";"Zuid-Holland (PV)";24815
+"Motorrijbewijs";"65 tot 70 jaar";"2019";"Zuid-Holland (PV)";16217
+"Motorrijbewijs";"70 tot 75 jaar";"2019";"Zuid-Holland (PV)";14272
+"Motorrijbewijs";"75 jaar of ouder";"2019";"Zuid-Holland (PV)";20724
