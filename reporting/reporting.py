@@ -19,7 +19,7 @@ from attributes.individual.education.current_education import (current_education
 from attributes.individual.education.education_attainment import (add_3_categories_education_level,
                                                                   fit_joint_absolved_education,
                                                                   get_education_attainment_margins)
-from attributes.individual.education_cz import (fit_edu, read_df_education_marginal)
+from attributes.individual.education_cz import (fit_edu, read_df_education_marginal, fit_specific_education)
 from attributes.individual.gender import fit_joint_age_gender
 from attributes.individual.household_position.household_position import (fit_household_position_joint_age_gender,
                                                                          read_households_margins)
@@ -38,6 +38,7 @@ def score_synthetic_population(df_synth_pop: pd.DataFrame):
         score_table_gender,
         score_table_integer_age,
         score_table_education,
+        score_table_specific_education,
         score_table_economical_activity,
         score_table_place_activity,
         score_table_frequency_activity,
@@ -403,15 +404,57 @@ def score_table_vehicle_activity(df: pd.DataFrame) -> List[ComparisonTuple]:
         (observed_gender, expected_gender, "vehicle activity", "gender"),
         (observed_ea_school_work, expected_ea_school_work, "vehicle activity", "ea_school_work_2"),
         (observed_category_place_activity, expected_category_place_activity, "vehicle activity", "category_place_activity"),
-        (observed_category_f_activity, expected_category_f_activity, "vehicle activity", "category_place_activity"),
+        (observed_category_f_activity, expected_category_f_activity, "vehicle activity", "category_f_activity"),
         (
             observed_joint,
-            expected_joint.set_index(["age_group", "gender", "ea_school_work_2", "category_place_activity", "vehicle_activity"]),
+            expected_joint.set_index(["age_group", "gender", "ea_school_work_2", "category_place_activity", "vehicle_activity", "category_f_activity"]),
             "vehicle activity",
             "age_group_x_gender_x_ea_school_work_2_x_category_place_activity_x_category_f_activity" 
             # r"age group $\times$ gender"
         )
     ]
+
+
+def score_table_specific_education(df: pd.DataFrame) -> List[ComparisonTuple]:
+    """
+    Evaluates the fit of specific education against marginal and joint distributions.
+    Specific education is conditioned on age group, gender, and general education.
+    """
+    # 1. Získání teoretické (očekávané) matice z IPFN
+    expected_joint = fit_specific_education(df)
+    
+    # 2. Přejmenování sloupce, aby odpovídal syntetické populaci
+    expected_joint = expected_joint.rename(columns={'education_coarse': 'education'})
+
+    # 3. Příprava OČEKÁVANÝCH dat
+    # Všimněte si, že expected_margins se grupují JEN podle specifického vzdělání
+    expected_margins = expected_joint.groupby(['education_specific']).sum()["count"]
+    expected_gender = expected_joint.groupby(['education_specific', 'gender']).sum()["count"]
+    expected_age = expected_joint.groupby(['education_specific', 'age_group']).sum()["count"]
+    expected_coarse = expected_joint.groupby(['education_specific', 'education']).sum()["count"]
+
+    # 4. Příprava POZOROVANÝCH dat
+    observed_margins = synthetic_population_to_contingency(df, ["education_specific"])
+    observed_gender = synthetic_population_to_contingency(df, ["education_specific", "gender"], full_crostab=True)
+    observed_age = synthetic_population_to_contingency(df, ["education_specific", "age_group"], full_crostab=True)
+    observed_coarse = synthetic_population_to_contingency(df, ["education_specific", "education"], full_crostab=True)
+    
+    observed_full = synthetic_population_to_contingency(df, ["age_group", "gender", "education", "education_specific"], full_crostab=True)
+
+    return [
+        # OPRAVA ZDE: Čtvrtý parametr je "", čímž testujeme jen celoměstský součet
+        (observed_margins, expected_margins, "specific education", ""),
+        (observed_gender, expected_gender, "specific education", "gender"),
+        (observed_age, expected_age, "specific education", "age group"),
+        (observed_coarse, expected_coarse, "specific education", "general education"),
+        (
+            observed_full, 
+            expected_joint.set_index(["age_group", "gender", "education", "education_specific"])["count"], 
+            "specific education", 
+            "age_group X gender X general education"
+        ),
+    ]
+
 
 
 def readable_name(names, dimension):
