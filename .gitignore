@@ -162,8 +162,9 @@ cython_debug/
 .idea/
 
 # příliš velké soubory :D
-/output
-/datasources
+/output/*
+/datasources/* 
+*.pkl
 *.pkl
 *.gpkg
 *.zip
