@@ -168,5 +168,6 @@ cython_debug/
 *.gpkg
 *.zip
 *.csv
+*.tex
 
 *.vscode
